@@ -22,10 +22,19 @@ defmodule Queue do
 end
 ```
 
+### Postgres
 ```elixir
 config :example, Queue,
   adapter: DQ.Adapters.Ecto
   repo: Simple.Repo
+```
+
+### SQS
+```elixir
+config :example, Queue,
+  adapter: DQ.Adapters.Sqs
+  queue_name: "sqs_queue_name",
+  dead_queue_name: "sqs_queue_name_error",
 ```
 
 
@@ -35,7 +44,7 @@ be found at [https://hexdocs.pm/dq](https://hexdocs.pm/dq).
 
 ## Admin Interface
 
-[https://dq-admin.s3-website-us-east-1.amazonaws.com](https://dq-admin.s3-website-us-east-1.amazonaws.com)
+[http://dq-admin.s3-website-us-east-1.amazonaws.com](http://dq-admin.s3-website-us-east-1.amazonaws.com)
 
 
 ### API Config
