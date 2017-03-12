@@ -1,11 +1,14 @@
 defmodule DQ.Adapters.Ecto.Statments do
+  def insert do
+    "INSERT INTO $TABLE$ (payload, max_runtime_seconds, scheduled_at) VALUES($1,$2,$3)"
+  end
   def ack do
-    "DELETE FROM jobs where id = $1"
+    "DELETE FROM $TABLE$ where id = $1"
   end
 
   def nack do
   """
-UPDATE jobs SET
+UPDATE $TABLE$ SET
   error_count = error_count + 1,
   error_message = $1,
   status = 'pending',
@@ -19,7 +22,7 @@ WHERE
 
   def nack_dead do
   """
-UPDATE jobs SET
+UPDATE $TABLE$ SET
   error_count = error_count + 1,
   error_message = $1,
   status = 'dead',
@@ -35,7 +38,7 @@ WHERE
 WITH candidates AS (
    SELECT id, payload,
       scheduled_at as scheduled_at
-   FROM jobs
+   FROM $TABLE$
    WHERE
      dequeued_at IS NULL
      AND
@@ -51,15 +54,14 @@ WITH candidates AS (
    ORDER BY scheduled_at nulls first
    LIMIT 1
 )
-UPDATE jobs SET
+UPDATE $TABLE$ SET
   status = 'running',
   dequeued_at = now() at time zone 'utc',
-  deadline_at = now() at time zone 'utc' + (jobs.max_runtime_seconds::text || ' ' || 'seconds'::text)::interval
+  deadline_at = now() at time zone 'utc' + ($TABLE$.max_runtime_seconds::text || ' ' || 'seconds'::text)::interval
 WHERE id = (SELECT id FROM selected)
 AND dequeued_at IS NULL
 RETURNING
    id,
-   queue,
    status,
    payload,
    error_count,
@@ -70,7 +72,7 @@ RETURNING
 
   def retry do
   """
-UPDATE jobs SET
+UPDATE $TABLE$ SET
   error_count = 0,
   error_message = NULL,
   status = 'pending',
@@ -82,24 +84,24 @@ WHERE
   end
 
   def dead do
-    "SELECT * from jobs where status = 'dead' limit $1"
+    "SELECT * from $TABLE$ where status = 'dead' limit $1"
   end
 
   def purge do
-    "DELETE FROM jobs"
+    "DELETE FROM $TABLE$"
   end
 
   def dead_purge do
-    "DELETE FROM jobs where status = 'dead'"
+    "DELETE FROM $TABLE$ where status = 'dead'"
   end
 
   def info do
     """
 select
-  (select count(*) from jobs where status = 'pending' AND scheduled_at IS NULL) as pending,
-  (select count(*) from jobs where status = 'pending' AND scheduled_at IS NOT NULL) as delayed,
-  (select count(*) from jobs where status = 'running') as running,
-  (select count(*) from jobs where status = 'dead') as dead;
+  (select count(*) from $TABLE$ where status = 'pending' AND scheduled_at IS NULL) as pending,
+  (select count(*) from $TABLE$ where status = 'pending' AND scheduled_at IS NOT NULL) as delayed,
+  (select count(*) from $TABLE$ where status = 'running') as running,
+  (select count(*) from $TABLE$ where status = 'dead') as dead;
     """
   end
 end

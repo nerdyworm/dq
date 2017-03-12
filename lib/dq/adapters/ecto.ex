@@ -35,8 +35,7 @@ defmodule DQ.Adapters.Ecto do
   end
 
   def info(queue) do
-    repo = queue.config[:repo]
-    %Postgrex.Result{columns: columns, rows: [row]} = SQL.query!(repo, Statments.info, [])
+    %Postgrex.Result{columns: columns, rows: [row]} = sql(queue, Statments.info, [])
     cols = Enum.map(columns, &(String.to_atom(&1)))
     {:ok, struct(Info, Enum.zip(cols, row))}
   end
@@ -47,25 +46,30 @@ defmodule DQ.Adapters.Ecto do
     end)
   end
 
-  def push(queue, module, args) do
+  def sql(queue, statement, args) do
     repo = queue.config[:repo]
-    DQ.Adapters.Ecto.Job.new(module, args) |> repo.insert!()
+    table = queue.config |> Keyword.get(:table, :jobs) |> Atom.to_string
+    statement = String.replace(statement, "$TABLE$", table)
+    SQL.query!(repo, statement, args)
+  end
+
+  def push(queue, module, args, opts \\ []) do
+    max_runtime_seconds = Keyword.get(opts, :max_runtime_seconds, 30)
+    scheduled_at = Keyword.get(opts, :scheduled_at, nil)
+    payload = Encoder.encode({module, args})
+    sql(queue, Statments.insert, [payload, max_runtime_seconds, scheduled_at])
     :ok
   end
 
-
   def pop(queue, _) do
-    repo = queue.config[:repo]
-    res  = SQL.query!(repo, Statments.pop, [])
+    res  = sql(queue, Statments.pop, [])
     jobs = decode_results(res)
-
     {:ok, jobs}
   end
 
 
   def ack(queue, job) do
-    repo = queue.config[:repo]
-    %Postgrex.Result{num_rows: 1} = SQL.query!(repo, Statments.ack, [job.id])
+    %Postgrex.Result{num_rows: 1} = sql(queue, Statments.ack, [job.id])
     :ok
   end
 
@@ -74,9 +78,9 @@ defmodule DQ.Adapters.Ecto do
     repo     = queue.config[:repo]
     interval = queue.config[:retry_intervals] |> Enum.at(retries)
     if interval do
-      SQL.query!(repo, Statments.nack, [message, "#{interval}", job.id])
+      sql(queue, Statments.nack, [message, "#{interval}", job.id])
     else
-      SQL.query!(repo, Statments.nack_dead, [message, job.id])
+      sql(queue, Statments.nack_dead, [message, job.id])
     end
     :ok
   end
@@ -91,15 +95,15 @@ defmodule DQ.Adapters.Ecto do
   end
 
   def dead(queue, limit \\ 100) do
-    repo = queue.config[:repo]
-    res = SQL.query!(repo, Statments.dead, [limit])
-    jobs = decode_results(res)
+    jobs =
+      sql(queue, Statments.dead, [limit])
+      |> decode_results()
+
     {:ok, jobs}
   end
 
   def dead_ack(queue, %{id: id}) when is_integer(id) do
-    repo = queue.config[:repo]
-    %Postgrex.Result{num_rows: 1} = SQL.query!(repo, Statments.ack, [id])
+    %Postgrex.Result{num_rows: 1} = sql(queue, Statments.ack, [id])
     :ok
   end
 
@@ -110,7 +114,7 @@ defmodule DQ.Adapters.Ecto do
 
   def dead_retry(queue, %{id: id}) when is_integer(id) do
     repo = queue.config[:repo]
-    %Postgrex.Result{num_rows: 1} = SQL.query!(repo, Statments.retry, [id])
+    %Postgrex.Result{num_rows: 1} = sql(queue, Statments.retry, [id])
     :ok
   end
 
@@ -120,14 +124,12 @@ defmodule DQ.Adapters.Ecto do
   end
 
   def dead_purge(queue) do
-    repo = queue.config[:repo]
-    SQL.query!(repo, Statments.dead_purge, [])
+    sql(queue, Statments.dead_purge, [])
     :ok
   end
 
   def purge(queue) do
-    repo = queue.config[:repo]
-    SQL.query!(repo, Statments.purge, [])
+    sql(queue, Statments.purge, [])
     :ok
   end
 

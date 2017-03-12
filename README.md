@@ -25,8 +25,23 @@ end
 ### Postgres
 ```elixir
 config :example, Queue,
-  adapter: DQ.Adapters.Ecto
-  repo: Simple.Repo
+  adapter: DQ.Adapters.Ecto,
+  repo: Simple.Repo,
+  table: "job_table_name"
+```
+
+```elixir
+defmodule YourJobSchema do
+  use Ecto.Schema
+  import Ecto.Schema
+  import DQ.Adapters.Ecto.Schema
+
+  alias DQ.Encoder
+
+  schema "job_table_name" do
+    job()
+  end
+end
 ```
 
 ### SQS
@@ -36,7 +51,6 @@ config :example, Queue,
   queue_name: "sqs_queue_name",
   dead_queue_name: "sqs_queue_name_error",
 ```
-
 
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can

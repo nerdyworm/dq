@@ -27,7 +27,7 @@ defmodule DQ.Adapters.Inline do
     end)
   end
 
-  def push(queue, module, args) do
+  def push(queue, module, args, opts \\ []) do
     job = Job.new(module, args)
     Worker.run(queue, job)
   end

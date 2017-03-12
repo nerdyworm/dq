@@ -3,12 +3,10 @@ defmodule DQ.Adapters.Sqs do
 
   require Logger
 
-  alias DQ.Job
-  alias DQ.Info
-  alias DQ.Encoder
   alias DQ.{
     Info,
     Job,
+    Encoder,
     Producer,
     ConsumerSupervisor,
   }
@@ -126,7 +124,7 @@ defmodule DQ.Adapters.Sqs do
     end)
   end
 
-  def push(queue, module, args) do
+  def push(queue, module, args, opts \\ []) do
     start = :os.system_time(:milli_seconds)
     name = queue.config |> Keyword.get(:queue_name)
     job = Job.new(module, args)

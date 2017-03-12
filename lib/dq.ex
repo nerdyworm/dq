@@ -34,8 +34,8 @@ defmodule DQ do
         @adapter.push(@queue, pairs)
       end
 
-      def push(module, args) do
-        @adapter.push(@queue, module, args)
+      def push(module, args, opts \\ []) do
+        @adapter.push(@queue, module, args, opts)
       end
 
       def pop(limit) do
