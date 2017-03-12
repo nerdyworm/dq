@@ -1,0 +1,145 @@
+defmodule DQ.Adapters.Ecto do
+  @behaviour DQ.Adapter
+
+  import Supervisor.Spec
+
+  alias DQ.{
+    Info,
+    Job,
+    Middleware,
+    Context,
+    Encoder,
+    Producer,
+    ConsumerSupervisor,
+    Adapters.Ecto.Statments
+  }
+
+  alias Ecto.Adapters.SQL
+
+  import Ecto.Query
+
+  use GenServer
+
+  def start_link(queue) do
+    children = [
+      worker(Producer, [queue]),
+      supervisor(ConsumerSupervisor, [queue]),
+      supervisor(Task.Supervisor, [[name: queue.task_supervisor_name]])
+    ]
+
+    Supervisor.start_link(children, strategy: :one_for_one)
+  end
+
+  def init(queue) do
+    {:ok, queue}
+  end
+
+  def info(queue) do
+    repo = queue.config[:repo]
+    %Postgrex.Result{columns: columns, rows: [row]} = SQL.query!(repo, Statments.info, [])
+    cols = Enum.map(columns, &(String.to_atom(&1)))
+    {:ok, struct(Info, Enum.zip(cols, row))}
+  end
+
+  def push(queue, jobs) when is_list(jobs) do
+    Enum.each(jobs, fn({module, args}) ->
+      queue.push(module, args)
+    end)
+  end
+
+  def push(queue, module, args) do
+    repo = queue.config[:repo]
+    DQ.Adapters.Ecto.Job.new(module, args) |> repo.insert!()
+    :ok
+  end
+
+
+  def pop(queue, _) do
+    repo = queue.config[:repo]
+    res  = SQL.query!(repo, Statments.pop, [])
+    jobs = decode_results(res)
+
+    {:ok, jobs}
+  end
+
+
+  def ack(queue, job) do
+    repo = queue.config[:repo]
+    %Postgrex.Result{num_rows: 1} = SQL.query!(repo, Statments.ack, [job.id])
+    :ok
+  end
+
+  def nack(queue, job, message) do
+    retries  = job.error_count
+    repo     = queue.config[:repo]
+    interval = queue.config[:retry_intervals] |> Enum.at(retries)
+    if interval do
+      SQL.query!(repo, Statments.nack, [message, "#{interval}", job.id])
+    else
+      SQL.query!(repo, Statments.nack_dead, [message, job.id])
+    end
+    :ok
+  end
+
+  defp decode_results(%Postgrex.Result{columns: columns, rows: rows}) do
+    cols = Enum.map columns, &(String.to_atom(&1)) # b
+    Enum.map rows, fn(row) ->
+      job = struct(Job, Enum.zip(cols, row))
+      {module, args} = Encoder.decode(job.payload)
+      %Job{job | module: module, args: args}
+    end
+  end
+
+  def dead(queue, limit \\ 100) do
+    repo = queue.config[:repo]
+    res = SQL.query!(repo, Statments.dead, [limit])
+    jobs = decode_results(res)
+    {:ok, jobs}
+  end
+
+  def dead_ack(queue, %{id: id}) when is_integer(id) do
+    repo = queue.config[:repo]
+    %Postgrex.Result{num_rows: 1} = SQL.query!(repo, Statments.ack, [id])
+    :ok
+  end
+
+  def dead_ack(queue, %{id: id} = job) when is_binary(id) do
+    job = %{job | id: id |> String.to_integer}
+    dead_ack(queue, job)
+  end
+
+  def dead_retry(queue, %{id: id}) when is_integer(id) do
+    repo = queue.config[:repo]
+    %Postgrex.Result{num_rows: 1} = SQL.query!(repo, Statments.retry, [id])
+    :ok
+  end
+
+  def dead_retry(queue, %{id: id} = job) when is_binary(id) do
+    job = %{job | id: id |> String.to_integer}
+    dead_retry(queue, job)
+  end
+
+  def dead_purge(queue) do
+    repo = queue.config[:repo]
+    SQL.query!(repo, Statments.dead_purge, [])
+    :ok
+  end
+
+  def purge(queue) do
+    repo = queue.config[:repo]
+    SQL.query!(repo, Statments.purge, [])
+    :ok
+  end
+
+  def encode(job) do
+    job
+    |> Encoder.encode
+    |> Base.encode64
+  end
+
+  def decode(job) do
+    job
+    |> Base.decode64!
+    |> Encoder.decode
+  end
+end

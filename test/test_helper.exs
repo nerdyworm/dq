@@ -1,0 +1,11 @@
+Code.load_file("test/queue_adapter_case.exs")
+Mix.Task.run("ecto.drop")
+Mix.Task.run("ecto.create")
+Mix.Task.run("ecto.migrate")
+#Mix.Task.run("ecto.drop", ~w(--quiet))
+#Mix.Task.run("ecto.create", ~w(--quiet))
+#Mix.Task.run("ecto.migrate", ~w(--quiet))
+Mix.Ecto.ensure_repo(DQ.Repo, [])
+Mix.Ecto.ensure_started(DQ.Repo, [])
+ExUnit.start()
+
