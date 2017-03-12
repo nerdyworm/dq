@@ -57,10 +57,7 @@ basis.
 ```elixir
 defmodule YourJobSchema do
   use Ecto.Schema
-  import Ecto.Schema
   import DQ.Adapters.Ecto.Schema
-
-  alias DQ.Encoder
 
   schema "job_table_name" do
     job()
