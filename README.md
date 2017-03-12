@@ -22,13 +22,37 @@ defmodule Queue do
 end
 ```
 
-### Postgres
+### Ecto (Postgres)
+
+Allows you to create a queue based on a postgres table
+
+#### Config
 ```elixir
 config :example, Queue,
   adapter: DQ.Adapters.Ecto,
   repo: Simple.Repo,
   table: "job_table_name"
 ```
+
+#### Migration
+
+```elixir
+defmodule Repo.Migrations.CreateYourJobsTable do
+  use Ecto.Migration
+
+  def change do
+    create table(:job_table_name) do
+      DQ.Adapters.Ecto.Migrations.job()
+    end
+    DQ.Adapters.Ecto.Migrations.indexes(:job_table_name)
+  end
+end
+```
+
+#### Schema
+
+This is is optional, but it allows you to a jobs table on a per struct
+basis.
 
 ```elixir
 defmodule YourJobSchema do
