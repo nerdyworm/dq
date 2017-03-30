@@ -27,14 +27,17 @@ defmodule DQ.Adapters.Inline do
     end)
   end
 
-  def push(queue, module, args, opts \\ []) do
+  def push(queue, module, args, _opts \\ []) do
     job = Job.new(module, args)
     Worker.run(queue, job)
   end
 
   def pop(_,_), do: {:ok, []}
   def ack(_,_), do: :ok
-  def nack(_,_), do: :ok
+  def nack(_,_,_), do: :ok
   def dead(_,_), do: {:ok, []}
   def purge(_), do: :ok
+  def decode(_), do: nil
+  def enecode(_), do: nil
+  def dead_retry(_,_), do: :ok
 end

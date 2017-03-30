@@ -34,4 +34,16 @@ defmodule MiddlewareTest do
     assert_receive :called_second
     assert ctx.assigns[:ran] == "second"
   end
+
+  test "runs the queue when no module is found" do
+    Context.new(__MODULE__, %DQ.Job{args: ["args"]})
+    |> Middleware.run([DQ.Middleware.Executioner])
+
+    assert_receive :ran
+  end
+
+  def run("args") do
+    Process.send(self(), :ran, [])
+    :ok
+  end
 end

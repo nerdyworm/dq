@@ -95,7 +95,7 @@ defmodule DQ do
       queues: ["default"],
       middleware: default_middleware(),
       retry_intervals: [2, 4, 8],
-      after_empty_result_idle_ms: 2000,
+      polling_ms: 5000,
     ]
 
     config = Keyword.merge(defaults, config)

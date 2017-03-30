@@ -2,9 +2,8 @@ defmodule DQ.Middleware.Logger do
   import DQ.Middleware
   import DQ.Context
 
-  alias DQ.Context
+  alias DQ.{Context, Job}
   require Logger
-
 
   def call(ctx, next) do
     started_at = DateTime.utc_now
@@ -12,6 +11,14 @@ defmodule DQ.Middleware.Logger do
     results = run(ctx, next)
     Logger.info("#{log_context(ctx)} runtime=#{formatted_diff(delta(started_at))}")
     results
+  end
+
+  defp log_context(%Context{queue: queue, job: %Job{module: module} = job}) when is_nil(module) do
+    if job.error_count > 0 do
+      "#{queue} #{job.id} tries=#{job.error_count}"
+    else
+      "#{queue} #{job.id}"
+    end
   end
 
   defp log_context(%Context{job: job}) do

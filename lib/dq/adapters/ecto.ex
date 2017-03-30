@@ -75,7 +75,6 @@ defmodule DQ.Adapters.Ecto do
 
   def nack(queue, job, message) do
     retries  = job.error_count
-    repo     = queue.config[:repo]
     interval = queue.config[:retry_intervals] |> Enum.at(retries)
     if interval do
       sql(queue, Statments.nack, [message, "#{interval}", job.id])

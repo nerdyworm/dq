@@ -34,7 +34,7 @@ defmodule DQ.Producer do
         :ok
 
       new_messages_received == 0 ->
-        Process.send_after(self(), :pop, queue.config[:after_empty_result_idle_ms])
+        Process.send_after(self(), :pop, queue.config[:polling_ms])
 
       true ->
         Process.send(self(), :pop, [])

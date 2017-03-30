@@ -13,7 +13,7 @@ defmodule DQ.Adapter do
   @callback push(queue, job) :: :ok | {:error, any}
   @callback pop(queue, integer) :: {:ok, list(any)} | {:error, any}
   @callback ack(queue, job) :: :ok | {:error, any}
-  @callback nack(queue, job) :: :ok | {:error, any}
+  @callback nack(queue, job, binary) :: :ok | {:error, any}
   @callback dead(queue, job) :: :ok | {:error, any}
   @callback info(queue) :: {:ok, info}
   @callback purge(queue) :: :ok

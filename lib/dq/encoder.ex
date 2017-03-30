@@ -1,4 +1,12 @@
 defmodule DQ.Encoder do
+  def decode(nil) do
+    {nil, nil}
+  end
+
+  def decode("") do
+    {nil, nil}
+  end
+
   def decode(payload) do
     :erlang.binary_to_term(payload)
   end
