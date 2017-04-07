@@ -4,7 +4,7 @@ defmodule DQ.Adapters.Ecto.Migrations do
   """
   import Ecto.Migration
   def job(opts \\ []) do
-    add :payload, :binary
+    add :payload, :binary, null: true
     add :status, :string, null: false, default: "pending"
     add :dequeued_at, :timestamp, null: true
     add :deadline_at, :timestamp, null: true
