@@ -42,7 +42,7 @@ defmodule MiddlewareTest do
     assert_receive :ran
   end
 
-  def run("args") do
+  def run(_args) do
     Process.send(self(), :ran, [])
     :ok
   end

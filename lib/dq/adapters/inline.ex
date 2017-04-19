@@ -35,9 +35,12 @@ defmodule DQ.Adapters.Inline do
   def pop(_,_), do: {:ok, []}
   def ack(_,_), do: :ok
   def nack(_,_,_), do: :ok
-  def dead(_,_), do: {:ok, []}
+  def dead(_,_limit \\ 0), do: {:ok, []}
   def purge(_), do: :ok
   def decode(_), do: nil
   def enecode(_), do: nil
   def dead_retry(_,_), do: :ok
+  def dead_ack(_,_), do: :ok
+  def dead_purge(_), do: :ok
+  def encode(job), do: job
 end
