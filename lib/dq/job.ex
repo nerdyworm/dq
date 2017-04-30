@@ -1,6 +1,5 @@
 defmodule DQ.Job do
   @derive {Poison.Encoder, except: [:payload, :message]}
-  alias DQ.Encoder
 
   @type t :: module
 

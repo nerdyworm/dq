@@ -87,7 +87,7 @@ defmodule DQ.Plug do
     end
 
     put "/api/jobs/:job_id/retry" do
-      [name, job_id] = String.split(job_id, "$$")
+      [name, _] = String.split(job_id, "$$")
       queue = name |> String.to_atom
 
       job = queue.decode(conn.params["encoded"])
@@ -99,7 +99,7 @@ defmodule DQ.Plug do
     end
 
     put "/api/jobs/:job_id/ack" do
-      [name, job_id] = String.split(job_id, "$$")
+      [name, _] = String.split(job_id, "$$")
       queue = name |> String.to_atom
 
       job = queue.decode(conn.params["encoded"])

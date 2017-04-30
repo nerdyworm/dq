@@ -6,8 +6,6 @@ defmodule DQ.Adapters.Ecto do
   alias DQ.{
     Info,
     Job,
-    Middleware,
-    Context,
     Encoder,
     Producer,
     ConsumerSupervisor,
@@ -15,8 +13,6 @@ defmodule DQ.Adapters.Ecto do
   }
 
   alias Ecto.Adapters.SQL
-
-  import Ecto.Query
 
   use GenServer
 
@@ -112,7 +108,6 @@ defmodule DQ.Adapters.Ecto do
   end
 
   def dead_retry(queue, %{id: id}) when is_integer(id) do
-    repo = queue.config[:repo]
     %Postgrex.Result{num_rows: 1} = sql(queue, Statments.retry, [id])
     :ok
   end

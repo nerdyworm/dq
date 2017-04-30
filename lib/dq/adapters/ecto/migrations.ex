@@ -3,7 +3,7 @@ defmodule DQ.Adapters.Ecto.Migrations do
    Adds columns to a table to make it a job table
   """
   import Ecto.Migration
-  def job(opts \\ []) do
+  def job(_opts \\ []) do
     add :payload, :binary, null: true
     add :status, :string, null: false, default: "pending"
     add :dequeued_at, :timestamp, null: true

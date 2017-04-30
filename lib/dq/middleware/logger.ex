@@ -1,6 +1,5 @@
 defmodule DQ.Middleware.Logger do
   import DQ.Middleware
-  import DQ.Context
 
   alias DQ.{Context, Job}
   require Logger

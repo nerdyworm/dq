@@ -1,5 +1,5 @@
 defmodule DQ.Adapters.Sqs do
-  use Supervisor
+  import Supervisor.Spec
 
   require Logger
 
@@ -124,7 +124,7 @@ defmodule DQ.Adapters.Sqs do
     end)
   end
 
-  def push(queue, module, args, opts \\ []) do
+  def push(queue, module, args, _opts \\ []) do
     start = :os.system_time(:milli_seconds)
     name = queue.config |> Keyword.get(:queue_name)
     job = Job.new(module, args)
@@ -162,7 +162,6 @@ defmodule DQ.Adapters.Sqs do
   end
 
   def dead(queue) do
-    start = :os.system_time(:milli_seconds)
     queue_name = queue.config |> Keyword.get(:dead_queue_name)
 
     {:ok, response} = SQS.receive_message(queue_name, [
@@ -198,7 +197,7 @@ defmodule DQ.Adapters.Sqs do
     {:ok, jobs}
   end
 
-  defp decode_response(queue, %{body: %{messages: messages}}) do
+  defp decode_response(_queue, %{body: %{messages: messages}}) do
     Enum.map(messages, fn(%{body: body, attributes: attributes} = message) ->
       job = decode(body)
       %Job{job |

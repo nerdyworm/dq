@@ -2,7 +2,6 @@ defmodule DQ.Middleware.Executioner do
   alias DQ.{
     Context,
     Job,
-    Encoder,
   }
 
   def call(%Context{queue: queue, job: %Job{module: module} = job}, _next) when is_nil(module)  do

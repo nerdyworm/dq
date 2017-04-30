@@ -6,7 +6,6 @@ defmodule DQ.Worker do
   alias DQ.{
     Job,
     Context,
-    Worker,
     Middleware,
   }
 
