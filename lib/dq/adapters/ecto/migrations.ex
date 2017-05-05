@@ -6,9 +6,9 @@ defmodule DQ.Adapters.Ecto.Migrations do
   def job(_opts \\ []) do
     add :payload, :binary, null: true
     add :status, :string, null: false, default: "pending"
-    add :dequeued_at, :timestamp, null: true
-    add :deadline_at, :timestamp, null: true
-    add :scheduled_at, :timestamp, null: true
+    add :dequeued_at, :utc_timestamp, null: true
+    add :deadline_at, :utc_timestamp, null: true
+    add :scheduled_at, :utc_timestamp, null: true
     add :max_runtime_seconds, :integer
     add :error_count, :integer, null: false, default: 0
     add :error_message, :text, null: true
