@@ -50,10 +50,25 @@ defmodule DQ.Adapters.Ecto do
   end
 
   def push(queue, module, args, opts \\ []) do
-    max_runtime_seconds = Keyword.get(opts, :max_runtime_seconds, 30)
+    insert(queue, module, args, opts)
+    :ok
+  end
+
+  def timer(queue, module, args, opts \\ []) do
+    insert(queue, module, args, opts)
+  end
+
+  defp insert(queue, module, args, opts) do
     scheduled_at = Keyword.get(opts, :scheduled_at, nil)
+    max_runtime_seconds = Keyword.get(opts, :max_runtime_seconds, 30)
     payload = Encoder.encode({module, args})
-    sql(queue, Statments.insert, [payload, max_runtime_seconds, scheduled_at])
+    results = sql(queue, Statments.insert, [payload, max_runtime_seconds, scheduled_at])
+    %Postgrex.Result{columns: ["id"], rows: [[job_id]]} = results
+    {:ok, job_id}
+  end
+
+  def cancel(queue, timer_id) do
+    %Postgrex.Result{num_rows: 1} = sql(queue, Statments.ack, [timer_id])
     :ok
   end
 
@@ -62,7 +77,6 @@ defmodule DQ.Adapters.Ecto do
     jobs = decode_results(res)
     {:ok, jobs}
   end
-
 
   def ack(queue, job) do
     %Postgrex.Result{num_rows: 1} = sql(queue, Statments.ack, [job.id])
