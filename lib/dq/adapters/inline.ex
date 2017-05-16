@@ -32,6 +32,10 @@ defmodule DQ.Adapters.Inline do
     Worker.run(queue, job)
   end
 
+  def timer(queue, module, args, opts) do
+    push(queue, module, args, opts)
+  end
+
   def pop(_,_), do: {:ok, []}
   def ack(_,_), do: :ok
   def nack(_,_,_), do: :ok
