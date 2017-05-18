@@ -60,12 +60,24 @@ defmodule DQ.Adapters.Ecto do
 
   defp insert(queue, module, args, opts) do
     scheduled_at = Keyword.get(opts, :scheduled_at, nil)
+    scheduled_at = cast_scheduled_at(scheduled_at)
+
     max_runtime_seconds = Keyword.get(opts, :max_runtime_seconds, 30)
     payload = Encoder.encode({module, args})
     results = sql(queue, Statments.insert, [payload, max_runtime_seconds, scheduled_at])
     %Postgrex.Result{columns: ["id"], rows: [[job_id]]} = results
     {:ok, job_id}
   end
+
+  defp cast_scheduled_at(scheduled_at) when is_nil(scheduled_at) do
+    nil
+  end
+
+  defp cast_scheduled_at(scheduled_at) when is_binary(scheduled_at) do
+    Ecto.DateTime.cast!(scheduled_at)
+  end
+
+  defp cast_scheduled_at(scheduled_at), do: scheduled_at
 
   def cancel(queue, timer_id) do
     %Postgrex.Result{num_rows: 1} = sql(queue, Statments.ack, [timer_id])
