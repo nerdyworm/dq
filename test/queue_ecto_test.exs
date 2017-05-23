@@ -18,10 +18,5 @@ defmodule QueQueueEctoTest do
     Process.register(self(), __MODULE__)
     {:ok, queue: Queue, process: __MODULE__}
   end
-
-  test "timer can be started and canceled", %{queue: queue} do
-    assert {:ok, timer_id} = queue.timer(__MODULE__, ["fire!"], DateTime.utc_now)
-    assert :ok = queue.cancel(timer_id)
-  end
 end
 

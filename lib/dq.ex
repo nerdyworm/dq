@@ -38,14 +38,6 @@ defmodule DQ do
         @adapter.push(@queue, module, args, opts)
       end
 
-      def timer(module, args, scheduled_at) do
-        @adapter.timer(@queue, module, args, [scheduled_at: scheduled_at])
-      end
-
-      def cancel(timer_id) do
-        @adapter.cancel(@queue, timer_id)
-      end
-
       def pop(limit) do
         @adapter.pop(@queue, limit)
       end

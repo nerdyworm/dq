@@ -79,11 +79,6 @@ defmodule DQ.Adapters.Ecto do
 
   defp cast_scheduled_at(scheduled_at), do: scheduled_at
 
-  def cancel(queue, timer_id) do
-    %Postgrex.Result{num_rows: 1} = sql(queue, Statments.ack, [timer_id])
-    :ok
-  end
-
   def pop(queue, _) do
     res  = sql(queue, Statments.pop, [])
     jobs = decode_results(res)
