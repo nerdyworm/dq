@@ -1,7 +1,8 @@
-defmodule DQ.Adapters.Ecto.Statments do
+defmodule DQ.Adapters.Ecto.Statements do
   def insert do
     "INSERT INTO $TABLE$ (payload, max_runtime_seconds, scheduled_at) VALUES($1,$2,$3) returning id"
   end
+
   def ack do
     "DELETE FROM $TABLE$ where id = $1"
   end

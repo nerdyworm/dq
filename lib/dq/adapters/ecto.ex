@@ -9,7 +9,7 @@ defmodule DQ.Adapters.Ecto do
     Encoder,
     Producer,
     ConsumerSupervisor,
-    Adapters.Ecto.Statments
+    Adapters.Ecto.Statements
   }
 
   alias Ecto.Adapters.SQL
@@ -31,7 +31,7 @@ defmodule DQ.Adapters.Ecto do
   end
 
   def info(queue) do
-    %Postgrex.Result{columns: columns, rows: [row]} = sql(queue, Statments.info, [])
+    %Postgrex.Result{columns: columns, rows: [row]} = sql(queue, Statements.info, [])
     cols = Enum.map(columns, &(String.to_atom(&1)))
     {:ok, struct(Info, Enum.zip(cols, row))}
   end
@@ -45,7 +45,12 @@ defmodule DQ.Adapters.Ecto do
   def sql(queue, statement, args) do
     repo = queue.config[:repo]
     table = queue.config |> Keyword.get(:table, :jobs) |> Atom.to_string
-    statement = String.replace(statement, "$TABLE$", table)
+    statement =
+      statement
+      |> String.replace("$TABLE$", table)
+      |> String.replace("\n", " ")
+      |> String.replace(~r/\s+/, " ")
+
     SQL.query!(repo, statement, args)
   end
 
@@ -64,7 +69,7 @@ defmodule DQ.Adapters.Ecto do
 
     max_runtime_seconds = Keyword.get(opts, :max_runtime_seconds, 30)
     payload = Encoder.encode({module, args})
-    results = sql(queue, Statments.insert, [payload, max_runtime_seconds, scheduled_at])
+    results = sql(queue, Statements.insert, [payload, max_runtime_seconds, scheduled_at])
     %Postgrex.Result{columns: ["id"], rows: [[job_id]]} = results
     {:ok, job_id}
   end
@@ -80,13 +85,13 @@ defmodule DQ.Adapters.Ecto do
   defp cast_scheduled_at(scheduled_at), do: scheduled_at
 
   def pop(queue, _) do
-    res  = sql(queue, Statments.pop, [])
+    res  = sql(queue, Statements.pop, [])
     jobs = decode_results(res)
     {:ok, jobs}
   end
 
   def ack(queue, job) do
-    %Postgrex.Result{num_rows: 1} = sql(queue, Statments.ack, [job.id])
+    %Postgrex.Result{num_rows: 1} = sql(queue, Statements.ack, [job.id])
     :ok
   end
 
@@ -94,9 +99,9 @@ defmodule DQ.Adapters.Ecto do
     retries  = job.error_count
     interval = queue.config[:retry_intervals] |> Enum.at(retries)
     if interval do
-      sql(queue, Statments.nack, [message, "#{interval}", job.id])
+      sql(queue, Statements.nack, [message, "#{interval}", job.id])
     else
-      sql(queue, Statments.nack_dead, [message, job.id])
+      sql(queue, Statements.nack_dead, [message, job.id])
     end
     :ok
   end
@@ -112,14 +117,14 @@ defmodule DQ.Adapters.Ecto do
 
   def dead(queue, limit \\ 100) do
     jobs =
-      sql(queue, Statments.dead, [limit])
+      sql(queue, Statements.dead, [limit])
       |> decode_results()
 
     {:ok, jobs}
   end
 
   def dead_ack(queue, %{id: id}) when is_integer(id) do
-    %Postgrex.Result{num_rows: 1} = sql(queue, Statments.ack, [id])
+    %Postgrex.Result{num_rows: 1} = sql(queue, Statements.ack, [id])
     :ok
   end
 
@@ -129,7 +134,7 @@ defmodule DQ.Adapters.Ecto do
   end
 
   def dead_retry(queue, %{id: id}) when is_integer(id) do
-    %Postgrex.Result{num_rows: 1} = sql(queue, Statments.retry, [id])
+    %Postgrex.Result{num_rows: 1} = sql(queue, Statements.retry, [id])
     :ok
   end
 
@@ -139,12 +144,12 @@ defmodule DQ.Adapters.Ecto do
   end
 
   def dead_purge(queue) do
-    sql(queue, Statments.dead_purge, [])
+    sql(queue, Statements.dead_purge, [])
     :ok
   end
 
   def purge(queue) do
-    sql(queue, Statments.purge, [])
+    sql(queue, Statements.purge, [])
     :ok
   end
 
