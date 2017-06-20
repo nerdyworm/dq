@@ -28,7 +28,7 @@ defmodule DQ.Server.WeightedRoundRobin do
     {:reply, {:ok, next}, state}
   end
 
-  defp next(%State{index: index, current_weight: cw, queues: queues} = state) do
+  defp next(%State{index: index, queues: queues} = state) do
     i = rem((index + 1), length(queues))
     cw = current_weight(state)
     state = %State{state | index: i, current_weight: cw}
@@ -40,7 +40,7 @@ defmodule DQ.Server.WeightedRoundRobin do
     end
   end
 
-  defp current_weight(%State{current_weight: cw, index: 0, queues: queues, gcd: gcd, max: max} = state) do
+  defp current_weight(%State{current_weight: cw, index: 0, gcd: gcd, max: max}) do
     cw = cw - gcd
     if cw <= 0 do
       max
