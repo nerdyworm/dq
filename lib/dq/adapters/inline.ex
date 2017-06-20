@@ -7,16 +7,6 @@ defmodule DQ.Adapters.Inline do
     Worker,
   }
 
-  use GenServer
-
-  def start_link(queue) do
-    GenServer.start_link(__MODULE__, queue)
-  end
-
-  def init(queue) do
-    {:ok, queue}
-  end
-
   def info(_) do
    {:ok, %Info{}}
   end
@@ -28,8 +18,9 @@ defmodule DQ.Adapters.Inline do
   end
 
   def push(queue, module, args, _opts \\ []) do
-    job = Job.new(module, args)
-    Worker.run(queue, job)
+    queue
+    |> Job.new(module, args)
+    |> Worker.run()
   end
 
   def timer(queue, module, args, opts) do

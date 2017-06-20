@@ -2,7 +2,10 @@ defmodule QueQueueEctoTest do
   use QueueAdapterCase
 
   defmodule Queue do
-    use DQ, otp_app: :dq, adapter: DQ.Adapters.Ecto, repo: DQ.Repo, after_empty_result_idle_ms: 500
+    use DQ.Queue, otp_app: :dq,
+      adapter: DQ.Adapters.Ecto,
+      repo: DQ.Repo,
+      after_empty_result_idle_ms: 500
   end
 
   def run("fire!") do
@@ -10,7 +13,7 @@ defmodule QueQueueEctoTest do
   end
 
   setup_all context do
-    {:ok, pid} = Queue.start_link
+    {:ok, pid} = DQ.Server.start_link([Queue])
     on_exit(context, fn() -> Process.exit(pid, :exit) end)
   end
 

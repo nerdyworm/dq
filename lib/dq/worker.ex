@@ -7,22 +7,23 @@ defmodule DQ.Worker do
     Job,
     Context,
     Middleware,
+    TaskSupervisor,
   }
 
-  def run(queue, job) do
-    Context.new(queue, job)
+  def run(%Job{queue: queue} = job) do
+    job
+    |> Context.new()
     |> Middleware.run(queue.middleware)
   end
 
-  def start_link(queue, job) do
-    Task.start_link(fn -> start(queue, job) end)
+  def start_link(%Job{} = job) do
+    Task.start_link(fn -> start(job) end)
   end
 
-  defp start(queue, %Job{max_runtime_seconds: max_runtime_seconds} = job) do
+  defp start(%Job{queue: queue, max_runtime_seconds: max_runtime_seconds} = job) do
     timeout    = (max_runtime_seconds || 30) * 1000
-    supervisor = queue.task_supervisor_name
 
-    task = Task.Supervisor.async_nolink(supervisor, __MODULE__, :run, [queue, job])
+    task = Task.Supervisor.async_nolink(TaskSupervisor, __MODULE__, :run, [job])
     case Task.yield(task, timeout) || Task.shutdown(task) do
       {:ok, :ok} ->
         :ok = queue.ack(job)

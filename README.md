@@ -5,6 +5,10 @@ of Ecto.
 
 It also has a testing adapter which allows you to run test synchronously.
 
+# TODO
+
+- process that polls for jobs that have timed out and restarts them
+
 ## Installation
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed
@@ -18,8 +22,12 @@ end
 
 ```elixir
 defmodule Queue do
-  use DQ, otp_app: :example
+  use DQ.Queue, otp_app: :example
 end
+
+
+# start the DQ server to run a consumer
+worker(DQ, []),
 ```
 
 ### Ecto (Postgres)

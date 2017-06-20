@@ -1,5 +1,5 @@
 defmodule DQ.Context do
-  alias DQ.Context
+  alias DQ.{Context, Job}
   defstruct [
     assigns: %{},
     halted:  false,
@@ -7,7 +7,7 @@ defmodule DQ.Context do
     job:     nil,
   ]
 
-  def new(queue, job) do
+  def new(%Job{queue: queue} = job) do
     %__MODULE__{queue: queue, job: job}
   end
 

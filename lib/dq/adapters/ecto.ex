@@ -1,34 +1,14 @@
 defmodule DQ.Adapters.Ecto do
   @behaviour DQ.Adapter
 
-  import Supervisor.Spec
-
   alias DQ.{
     Info,
     Job,
     Encoder,
-    Producer,
-    ConsumerSupervisor,
     Adapters.Ecto.Statements
   }
 
   alias Ecto.Adapters.SQL
-
-  use GenServer
-
-  def start_link(queue) do
-    children = [
-      worker(Producer, [queue]),
-      supervisor(ConsumerSupervisor, [queue]),
-      supervisor(Task.Supervisor, [[name: queue.task_supervisor_name]])
-    ]
-
-    Supervisor.start_link(children, strategy: :one_for_one)
-  end
-
-  def init(queue) do
-    {:ok, queue}
-  end
 
   def info(queue) do
     %Postgrex.Result{columns: columns, rows: [row]} = sql(queue, Statements.info, [])

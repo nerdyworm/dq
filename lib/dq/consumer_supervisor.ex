@@ -5,21 +5,21 @@ defmodule DQ.ConsumerSupervisor do
     Worker
   }
 
-  def start_link(queue) do
-    ConsumerSupervisor.start_link(__MODULE__, queue, name: queue.supervisor_name)
+  def start_link do
+    ConsumerSupervisor.start_link(__MODULE__, :ok, name: __MODULE__)
   end
 
-  def init(queue) do
+  def init(:ok) do
     children = [
-      worker(Worker, [queue], [restart: :temporary])
+      worker(Worker, [], [restart: :temporary])
     ]
 
-    config = queue.config
+    config = Application.get_env(:dq, :server)
     min_demand = Keyword.get(config, :min_demand, 1)
     max_demand = Keyword.get(config, :max_demand, 2)
 
     {:ok, children, strategy: :one_for_one, subscribe_to: [
-      {queue.producer_name, min_demand: min_demand, max_demand: max_demand},
+      {DQ.Producer, min_demand: min_demand, max_demand: max_demand},
     ]}
   end
 end

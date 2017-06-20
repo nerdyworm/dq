@@ -2,15 +2,15 @@ defmodule DQ.Producer do
   use GenStage
 
   defmodule State do
-    defstruct demand: 0, queue: nil
+    defstruct demand: 0, manager: nil
   end
 
-  def start_link(queue) do
-    GenStage.start_link(__MODULE__, queue, name: queue.producer_name)
+  def start_link(manager) do
+    GenStage.start_link(__MODULE__, manager, name: __MODULE__)
   end
 
-  def init(queue) do
-    {:producer, %State{queue: queue}}
+  def init(manager) do
+    {:producer, %State{manager: manager}}
   end
 
   def handle_demand(incoming_demand, %State{demand: 0} = state) do
@@ -23,7 +23,8 @@ defmodule DQ.Producer do
     {:noreply, [], %State{state | demand: demand + incoming_demand}}
   end
 
-  def handle_info(:pop, %State{queue: queue, demand: demand} = state) do
+  def handle_info(:pop, %State{manager: manager, demand: demand} = state) do
+    {:ok, queue} = manager.next_queue
     {:ok, commands} = queue.pop(demand)
 
     new_messages_received = length(commands)
@@ -34,7 +35,7 @@ defmodule DQ.Producer do
         :ok
 
       new_messages_received == 0 ->
-        Process.send_after(self(), :pop, queue.config[:polling_ms])
+        Process.send_after(self(), :pop, manager.after_empty_result_ms)
 
       true ->
         Process.send(self(), :pop, [])
