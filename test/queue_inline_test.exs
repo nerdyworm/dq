@@ -2,11 +2,11 @@ defmodule QueueInlineTest do
   use QueueAdapterCase
 
   defmodule Queue do
-    use DQ, otp_app: :dq, adapter: DQ.Adapters.Inline
+    use DQ.Queue, otp_app: :dq, adapter: DQ.Adapters.Inline
   end
 
   setup_all context do
-    {:ok, pid} = Queue.start_link
+    {:ok, pid} = DQ.Server.start_link([Queue])
     on_exit(context, fn() -> Process.exit(pid, :exit) end)
   end
 

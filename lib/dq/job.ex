@@ -4,19 +4,19 @@ defmodule DQ.Job do
   @type t :: module
 
   defstruct [
-     id:                 nil,
-     payload:            nil,
-     module:             nil,
-     args:               nil,
-     queue:              "default",
-     status:             "pending",
-     error_count:         0,
-     error_message:       nil,
-     max_runtime_seconds: 30,
-     message:            nil,
+    id:                 nil,
+    payload:            nil,
+    module:             nil,
+    args:               nil,
+    queue:              nil,
+    status:             "pending",
+    error_count:         0,
+    error_message:       nil,
+    max_runtime_seconds: 30,
+    message:            nil,
   ]
 
-  def new(module, args) do
-    %__MODULE__{id: DQ.new_id, module: module, args: args}
+  def new(queue, module, args) do
+    %__MODULE__{id: DQ.new_id, queue: queue, module: module, args: args}
   end
 end

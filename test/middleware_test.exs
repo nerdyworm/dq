@@ -2,6 +2,7 @@ defmodule MiddlewareTest do
   use ExUnit.Case
 
   alias DQ.{
+    Job,
     Middleware,
     Context,
   }
@@ -21,14 +22,16 @@ defmodule MiddlewareTest do
 
     def call(ctx, next) do
       Process.send(self(), :called_second, [])
-      assign(ctx, :ran, "second")
+
+      ctx
+      |> assign(:ran, "second")
       |> run(next)
     end
   end
 
   test "runs through each middleware" do
     middlewares = [First, Second]
-    ctx = Context.new(nil, nil)
+    ctx = Context.new(%Job{})
     ctx = Middleware.run(ctx, middlewares)
     assert_receive :called_first
     assert_receive :called_second
@@ -36,7 +39,8 @@ defmodule MiddlewareTest do
   end
 
   test "runs the queue when no module is found" do
-    Context.new(__MODULE__, %DQ.Job{args: ["args"]})
+    %DQ.Job{args: ["args"], queue: __MODULE__}
+    |> Context.new()
     |> Middleware.run([DQ.Middleware.Executioner])
 
     assert_receive :ran

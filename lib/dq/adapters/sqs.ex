@@ -1,34 +1,15 @@
 defmodule DQ.Adapters.Sqs do
-  import Supervisor.Spec
-
   require Logger
 
   alias DQ.{
     Info,
     Job,
     Encoder,
-    Producer,
-    ConsumerSupervisor,
   }
 
   alias ExAws.{
     SQS
   }
-
-  def start_link(queue) do
-    children = [
-      worker(Producer, [queue]),
-      supervisor(ConsumerSupervisor, [queue]),
-      supervisor(Task.Supervisor, [[name: queue.task_supervisor_name]])
-    ]
-
-    opts = [strategy: :one_for_one]
-    Supervisor.start_link(children, opts)
-  end
-
-  def stop(pid, timeout \\ 5000) do
-    Supervisor.stop(pid, :normal, timeout)
-  end
 
   def info(queue) do
     {:ok, info} = queue.config |> Keyword.get(:queue_name) |> info_by_queue
@@ -112,7 +93,7 @@ defmodule DQ.Adapters.Sqs do
     |> Enum.each(fn(chunk) ->
       start = :os.system_time(:milli_seconds)
       payload = Enum.map(chunk, fn({module, args}) ->
-        job = Job.new(module, args)
+        job = Job.new(queue, module, args)
         [id: job.id, message_body: job |> encode]
       end)
 
@@ -127,7 +108,7 @@ defmodule DQ.Adapters.Sqs do
   def push(queue, module, args, _opts \\ []) do
     start = :os.system_time(:milli_seconds)
     name = queue.config |> Keyword.get(:queue_name)
-    job = Job.new(module, args)
+    job = Job.new(queue, module, args)
 
     case SQS.send_message(name, job |> encode) |> ExAws.request do
       {:ok, _} ->
