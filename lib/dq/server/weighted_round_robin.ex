@@ -23,8 +23,17 @@ defmodule DQ.Server.WeightedRoundRobin do
     GenServer.call(__MODULE__, :next_queue)
   end
 
+  def peak do
+    GenServer.call(__MODULE__, :peak)
+  end
+
   def handle_call(:next_queue, _from, %State{} = state) do
     {:ok, next, state} = next(state)
+    {:reply, {:ok, next}, state}
+  end
+
+  def handle_call(:peak, _from, %State{} = state) do
+    {:ok, next, _state} = next(state)
     {:reply, {:ok, next}, state}
   end
 

@@ -34,4 +34,9 @@ defmodule DQ.Server do
   def next_queue do
     DQ.Server.WeightedRoundRobin.next_queue
   end
+
+  def peak do
+    DQ.Server.WeightedRoundRobin.peak
+  end
+
 end
