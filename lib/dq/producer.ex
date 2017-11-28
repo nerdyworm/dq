@@ -46,7 +46,7 @@ defmodule DQ.Producer do
   end
 
   # When we have no messages for a queue see if we should back off a bit.
-  # If the next queue is the same quue, then backoff
+  # If the next queue is the same queue, then backoff
   # If the next queue was empty last time, then backoff
   # Otherwise just try to pop messages from the next queue
   defp handle_empty_messages(current_queue, %State{manager: manager, history: history}) do

@@ -38,5 +38,4 @@ defmodule DQ.Server do
   def peak do
     DQ.Server.WeightedRoundRobin.peak
   end
-
 end

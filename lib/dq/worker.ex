@@ -21,7 +21,7 @@ defmodule DQ.Worker do
   end
 
   defp start(%Job{queue: queue, max_runtime_seconds: max_runtime_seconds} = job) do
-    timeout    = (max_runtime_seconds || 30) * 1000
+    timeout = (max_runtime_seconds || 30) * 1000
 
     task = Task.Supervisor.async_nolink(TaskSupervisor, __MODULE__, :run, [job])
     case Task.yield(task, timeout) || Task.shutdown(task) do
