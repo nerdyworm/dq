@@ -54,7 +54,7 @@ defmodule DQ.Producer do
 
     cond do
       next == current_queue || Map.get(history, next) == 0 ->
-        Process.send_after(self(), :pop, manager.after_empty_result_ms)
+        Process.send_after(self(), :pop, manager.after_empty_result_ms())
 
       true ->
         Process.send(self(), :pop, [])
