@@ -21,7 +21,6 @@ defmodule DQ.Mixfile do
   defp deps do
     [
       {:gen_stage, "~> 0.12.2"},
-      {:poison, ">= 0.0.0"},
 
       # for admin
       {:plug, ">= 1.0.0"},
@@ -31,9 +30,11 @@ defmodule DQ.Mixfile do
       {:postgrex, ">= 0.0.0", optional: true},
       {:ecto, "~> 2.1.0", optional: true},
 
-      # Sqso
-      {:ex_aws, ">= 1.1.0"},
-      {:hackney, ">= 1.7.0", override: true},
+      # AWS Sqs
+      {:ex_aws, "~> 2.0"},
+      {:ex_aws_sqs, "~> 2.0"},
+      {:poison, "~> 3.0"},
+      {:hackney, "~> 1.9"},
       {:sweet_xml, ">= 0.5.0"},
     ]
   end
