@@ -20,7 +20,7 @@ defmodule DQ.Mixfile do
 
   defp deps do
     [
-      {:gen_stage, "~> 0.11.0"},
+      {:gen_stage, "~> 0.12.2"},
       {:poison, ">= 0.0.0"},
 
       # for admin
