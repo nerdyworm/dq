@@ -9,6 +9,6 @@ defmodule DQ do
   end
 
   defp queues do
-    Application.get_env(:dq, :queues)
+    Application.get_env(:dq, :queues, [])
   end
 end

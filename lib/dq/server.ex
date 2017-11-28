@@ -24,7 +24,14 @@ defmodule DQ.Server do
   end
 
   def config do
-    Application.get_env(:dq, :server)
+    defaults = [
+      after_empty_result_ms: 5000,
+      min_demand: 1,
+      max_demand: 1
+    ]
+
+    config = Application.get_env(:dq, :server, [])
+    Keyword.merge(defaults, config)
   end
 
   def after_empty_result_ms do

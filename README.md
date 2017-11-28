@@ -21,14 +21,32 @@ end
 ```
 
 ```elixir
+# lib/queue.ex
 defmodule Queue do
   use DQ.Queue, otp_app: :example
 end
+```
 
-
+``` elixir
 # start the DQ server to run a consumer
 worker(DQ, []),
 ```
+
+```elixir
+# config.exs
+config :dq, queues: [
+  Queue
+]
+
+config :dq, server: [
+  min_demand: 1,
+  max_demand: 10,
+  after_empty_result_ms: 1000
+]
+
+config :dq, :token, "xxx"
+```
+
 
 ### Ecto (Postgres)
 

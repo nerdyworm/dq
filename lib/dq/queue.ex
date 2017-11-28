@@ -84,9 +84,9 @@ defmodule DQ.Queue do
     ]
   end
 
-  def parse_config(store, options) do
+  def parse_config(queue, options) do
     otp_app = Keyword.fetch!(options, :otp_app)
-    config = Application.get_env(otp_app, store, [])
+    config = Application.get_env(otp_app, queue, [])
 
     defaults = [
       middleware: default_middleware(),
