@@ -14,9 +14,8 @@ defmodule DQ.Producer do
   end
 
   def handle_demand(incoming_demand, %State{demand: 0} = state) do
-    state = %State{state | demand: incoming_demand}
     Process.send(self(), :pop, [])
-    {:noreply, [], state}
+    {:noreply, [], %State{state | demand: incoming_demand}}
   end
 
   def handle_demand(incoming_demand, %State{demand: demand} = state) do
