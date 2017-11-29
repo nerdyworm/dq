@@ -66,7 +66,7 @@ defmodule DQ.Adapters.Ecto do
 
   def pop(queue, _) do
     res  = sql(queue, Statements.pop, [])
-    jobs = decode_results(res)
+    jobs = decode_results(res, queue)
     {:ok, jobs}
   end
 
@@ -86,19 +86,20 @@ defmodule DQ.Adapters.Ecto do
     :ok
   end
 
-  defp decode_results(%Postgrex.Result{columns: columns, rows: rows}) do
-    cols = Enum.map columns, &(String.to_atom(&1)) # b
-    Enum.map rows, fn(row) ->
-      job = struct(Job, Enum.zip(cols, row))
+  defp decode_results(%Postgrex.Result{columns: columns, rows: rows}, queue) do
+    type = queue.job_struct()
+    cols = Enum.map(columns, &(String.to_atom(&1)))
+    Enum.map(rows, fn(row) ->
+      job = struct(type, Enum.zip(cols, row))
       {module, args} = Encoder.decode(job.payload)
-      %Job{job | module: module, args: args}
-    end
+      %{job | module: module, args: args}
+    end)
   end
 
   def dead(queue, limit \\ 100) do
     jobs =
       sql(queue, Statements.dead, [limit])
-      |> decode_results()
+      |> decode_results(queue)
 
     {:ok, jobs}
   end

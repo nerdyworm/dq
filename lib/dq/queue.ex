@@ -36,7 +36,11 @@ defmodule DQ.Queue do
 
       def pop(limit) do
         {:ok, jobs} = @adapter.pop(@queue, limit)
-        {:ok, Enum.map(jobs, &(%DQ.Job{&1 | queue: @queue}))}
+        {:ok, Enum.map(jobs, &put_queue/1)}
+      end
+
+      defp put_queue(job) do
+        %{job | queue: @queue}
       end
 
       def dead do
@@ -73,6 +77,10 @@ defmodule DQ.Queue do
 
       def weight do
         @config[:weight]
+      end
+
+      def job_struct do
+        Keyword.get(@config, :struct, DQ.Job)
       end
     end
   end

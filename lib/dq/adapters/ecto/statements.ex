@@ -61,13 +61,7 @@ UPDATE $TABLE$ SET
   deadline_at = now() at time zone 'utc' + ($TABLE$.max_runtime_seconds::text || ' ' || 'seconds'::text)::interval
 WHERE id = (SELECT id FROM selected)
 AND dequeued_at IS NULL
-RETURNING
-   id,
-   status,
-   payload,
-   error_count,
-   error_message,
-   max_runtime_seconds
+RETURNING *
  """
   end
 

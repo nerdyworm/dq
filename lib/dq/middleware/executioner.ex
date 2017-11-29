@@ -4,7 +4,7 @@ defmodule DQ.Middleware.Executioner do
     Job,
   }
 
-  def call(%Context{queue: queue, job: %Job{module: module} = job}, _next) when is_nil(module)  do
+  def call(%Context{queue: queue, job: %{module: module} = job}, _next) when is_nil(module)  do
     case :erlang.apply(queue, :run, [job]) do
       :ok -> :ok
     end
