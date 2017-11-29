@@ -4,7 +4,6 @@ defmodule DQ.Worker do
   use GenServer
 
   alias DQ.{
-    Job,
     Context,
     Middleware,
     TaskSupervisor,

@@ -3,7 +3,6 @@ defmodule DQ.Adapters.Ecto do
 
   alias DQ.{
     Info,
-    Job,
     Encoder,
     Adapters.Ecto.Statements
   }
