@@ -1,5 +1,5 @@
 defmodule QueueWithCustomEctoSchemaTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   defmodule YourJobSchema do
     use Ecto.Schema
@@ -28,12 +28,8 @@ defmodule QueueWithCustomEctoSchemaTest do
     on_exit(context, fn() -> Process.exit(pid, :exit) end)
   end
 
-  setup do
-    Process.register(self(), :test)
-    {:ok, queue: Queue}
-  end
-
   test "custom job structs can be ran" do
+    Process.register(self(), :test)
     %YourJobSchema{} = DQ.Repo.insert!(%YourJobSchema{})
     assert_receive :ack
   end

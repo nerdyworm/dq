@@ -5,6 +5,10 @@ defmodule QueAdaptersEctoTest do
     def config do
       [repo: DQ.Repo, retry_intervals: [0]]
     end
+
+    def job_struct do
+      DQ.Job
+    end
   end
 
   setup do
