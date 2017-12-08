@@ -31,13 +31,13 @@ defmodule DQ.Plug do
     def auth(conn, _opts) do
       incoming = get_req_header(conn, "x-dq-authorization")
       token    = Application.get_env(:dq, :token, "")
-      if "#{incoming}" == "#{token}" do
+      # if "#{incoming}" == "#{token}" do
         conn
-      else
-        conn
-        |> send_resp(403, "Invalid token")
-        |> halt
-      end
+      # else
+      #   conn
+      #   |> send_resp(403, "Invalid token")
+      #   |> halt
+      # end
     end
 
     get "/api/ping" do
@@ -48,33 +48,20 @@ defmodule DQ.Plug do
 
     get "/api/queues" do
       queues = Application.get_env(:dq, :queues, [])
-
       data =
         Enum.map(queues, fn(queue) ->
-          {:ok, info} = queue.info
-          %{
-            id: "#{queue}",
-            type: "queue",
-            attributes: Map.merge(%{
-              name: "#{queue}"
-            }, Map.delete(info, :__struct__))
-          }
+          {:ok, info} = queue.info()
+          render_queue(queue, info)
         end)
 
-      json(conn, 200, %{data: data})
+      json(conn, 200, data)
     end
 
     get "/api/queues/:name" do
       queue = name |> String.to_existing_atom
       {:ok, info} = queue.info
-
-      data = %{
-        id: name,
-        type: "queue",
-        attributes: info
-      }
-
-      json(conn, 200, %{data: data})
+      data = render_queue(queue, info)
+      json(conn, 200, data)
     end
 
     put "/api/queues/:name/dead_purge" do
@@ -86,8 +73,8 @@ defmodule DQ.Plug do
       |> halt
     end
 
-    put "/api/jobs/:job_id/retry" do
-      [name, _] = String.split(job_id, "$$")
+    put "/api/jobs/retry" do
+      [name, _] = String.split(conn.params["id"], "$$")
       queue = name |> String.to_atom
 
       job = queue.decode(conn.params["encoded"])
@@ -98,8 +85,8 @@ defmodule DQ.Plug do
       |> halt
     end
 
-    put "/api/jobs/:job_id/ack" do
-      [name, _] = String.split(job_id, "$$")
+    put "/api/jobs/ack" do
+      [name, _] = String.split(conn.params["id"], "$$")
       queue = name |> String.to_atom
 
       job = queue.decode(conn.params["encoded"])
@@ -110,42 +97,11 @@ defmodule DQ.Plug do
       |> halt
     end
 
-    get "/api/jobs" do
-      queue = conn.params["queue_id"] |> String.to_existing_atom
-
+    get "/api/queues/:name/dead" do
+      queue = name |> String.to_existing_atom
       {:ok, dead} = queue.dead
-      data = Enum.map(dead, fn(job) ->
-        %{
-          id: "#{queue}$$#{job.id}",
-          type: "job",
-          attributes: %{
-            module: job.module,
-            args: job.args,
-            status: job.status,
-            error_count: job.error_count,
-            error_message: job.error_message,
-            encoded: queue.encode(job)
-          },
-          relationships: %{
-            queue: %{
-              data: %{
-                id: "#{queue}",
-                type: "queue",
-              }
-            }
-          }
-        }
-      end)
-
-      included = [%{
-        id: "#{queue}",
-        type: "queue",
-        attributes: %{
-          name: "#{queue}"
-        }
-      }]
-
-      json(conn, 200, %{data: data, included: included})
+      jobs = Enum.map(dead, &(render_job(queue, &1)))
+      json(conn, 200, jobs)
     end
 
 
@@ -154,6 +110,23 @@ defmodule DQ.Plug do
       |> put_resp_header("content-type", "application/json")
       |> send_resp(code, Poison.encode!(body))
       |> halt
+    end
+
+    def render_queue(queue, info) do
+      Map.delete(info, :__struct__)
+      |> Map.merge(%{name: "#{queue}"})
+    end
+
+    def render_job(queue, job) do
+      %{
+        id: "#{queue}$$#{job.id}",
+        module: job.module,
+        args: job.args,
+        status: job.status,
+        error_count: job.error_count,
+        error_message: job.error_message,
+        encoded: queue.encode(job)
+      }
     end
   end
 end
