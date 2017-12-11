@@ -74,9 +74,7 @@ defmodule DQ.Plug do
     end
 
     put "/api/jobs/retry" do
-      [name, _] = String.split(conn.params["id"], "$$")
-      queue = name |> String.to_atom
-
+      queue = conn.params["queue"] |> String.to_atom
       job = queue.decode(conn.params["encoded"])
       :ok = queue.dead_retry(job)
 
@@ -86,9 +84,7 @@ defmodule DQ.Plug do
     end
 
     put "/api/jobs/ack" do
-      [name, _] = String.split(conn.params["id"], "$$")
-      queue = name |> String.to_atom
-
+      queue = conn.params["queue"] |> String.to_atom
       job = queue.decode(conn.params["encoded"])
       :ok = queue.dead_ack(job)
 
@@ -119,7 +115,8 @@ defmodule DQ.Plug do
 
     def render_job(queue, job) do
       %{
-        id: "#{queue}$$#{job.id}",
+        id: job.id,
+        queue: "#{queue}",
         module: job.module,
         args: job.args,
         status: job.status,
