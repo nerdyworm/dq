@@ -118,12 +118,16 @@ defmodule DQ.Plug do
         id: job.id,
         queue: "#{queue}",
         module: job.module,
-        args: job.args,
+        args: job.args |> render_args(),
         status: job.status,
         error_count: job.error_count,
         error_message: job.error_message,
         encoded: queue.encode(job)
       }
+    end
+
+    def render_args(args) do
+      Poison.encode!(args, pretty: true)
     end
   end
 end
