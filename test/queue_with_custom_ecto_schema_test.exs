@@ -1,6 +1,10 @@
 defmodule QueueWithCustomEctoSchemaTest do
   use ExUnit.Case, async: true
 
+  defmodule Pool do
+    use DQ.Pool, otp_app: :dq, after_empty_result_ms: 500
+  end
+
   defmodule YourJobSchema do
     use Ecto.Schema
     import DQ.Adapters.Ecto.Schema
@@ -25,7 +29,7 @@ defmodule QueueWithCustomEctoSchemaTest do
   end
 
   setup_all context do
-    {:ok, pid} = DQ.Server.start_link([Queue])
+    {:ok, pid} = Pool.start_link([Queue])
     on_exit(context, fn -> Process.exit(pid, :exit) end)
   end
 

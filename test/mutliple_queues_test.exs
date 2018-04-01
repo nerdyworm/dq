@@ -1,12 +1,17 @@
 defmodule DQ.MultipleQueuesTest do
   use ExUnit.Case
 
+  defmodule Pool do
+    use DQ.Pool, otp_app: :dq, after_empty_result_ms: 500
+  end
+
   defmodule A do
     use DQ.Queue, otp_app: :dq, adapter: DQ.Adapters.Ecto, repo: DQ.Repo, polling_ms: 100
   end
 
   defmodule B do
-    use DQ.Queue, otp_app: :dq,
+    use DQ.Queue,
+      otp_app: :dq,
       adapter: DQ.Adapters.Sqs,
       retry_intervals: [0],
       queue_name: "dq_test",
@@ -30,11 +35,10 @@ defmodule DQ.MultipleQueuesTest do
   end
 
   test "work puller" do
-    {:ok, _pid} = DQ.Server.start_link([A, B])
+    {:ok, _pid} = Pool.start_link([A, B])
     assert :ok = A.push(__MODULE__, ["A"])
     assert :ok = B.push(__MODULE__, ["B"])
     assert_receive :A, 10_000
     assert_receive :B, 10_000
   end
 end
-

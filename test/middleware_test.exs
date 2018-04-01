@@ -4,7 +4,7 @@ defmodule MiddlewareTest do
   alias DQ.{
     Job,
     Middleware,
-    Context,
+    Context
   }
 
   defmodule First do
