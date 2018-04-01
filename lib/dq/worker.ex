@@ -6,7 +6,7 @@ defmodule DQ.Worker do
   alias DQ.{
     Context,
     Middleware,
-    TaskSupervisor,
+    TaskSupervisor
   }
 
   def run(%{queue: queue} = job) do
@@ -15,25 +15,24 @@ defmodule DQ.Worker do
     |> Middleware.run(queue.middleware)
   end
 
-  def start_link(job) do
-    Task.start_link(fn -> start(job) end)
+  def start_link(pool, job) do
+    Task.start_link(fn -> start(pool, job) end)
   end
 
-  defp start(%{queue: queue, max_runtime_seconds: max_runtime_seconds} = job) do
+  defp start(pool, %{queue: queue, max_runtime_seconds: max_runtime_seconds} = job) do
     timeout = (max_runtime_seconds || 30) * 1000
+    task = pool.start_task(job)
 
-    task = Task.Supervisor.async_nolink(TaskSupervisor, __MODULE__, :run, [job])
     case Task.yield(task, timeout) || Task.shutdown(task) do
       {:ok, :ok} ->
         :ok = queue.ack(job)
 
       {:exit, reason} ->
-        message = Exception.format(:exit, reason, System.stacktrace)
+        message = Exception.format(:exit, reason, System.stacktrace())
         :ok = queue.nack(job, message)
 
       nil ->
-        Logger.warn "Failed to get a result in #{timeout}ms"
+        Logger.warn("Failed to get a result in #{timeout}ms")
     end
   end
 end
-

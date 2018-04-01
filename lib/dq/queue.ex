@@ -11,8 +11,8 @@ defmodule DQ.Queue do
       {adapter, config} = parse_config(__MODULE__, opts)
 
       @adapter adapter
-      @config  config
-      @queue  __MODULE__
+      @config config
+      @queue __MODULE__
 
       def info do
         @adapter.info(@queue)
@@ -88,7 +88,7 @@ defmodule DQ.Queue do
   def default_middleware do
     [
       DQ.Middleware.Logger,
-      DQ.Middleware.Executioner,
+      DQ.Middleware.Executioner
     ]
   end
 
@@ -99,7 +99,7 @@ defmodule DQ.Queue do
     defaults = [
       middleware: default_middleware(),
       retry_intervals: [2, 4, 8],
-      weight: 1,
+      weight: 1
     ]
 
     config = Keyword.merge(defaults, config)
@@ -107,15 +107,11 @@ defmodule DQ.Queue do
     adapter = options[:adapter] || config[:adapter]
 
     unless adapter do
-      raise ArgumentError, "missing :adapter configuration in " <>
-      "config #{inspect otp_app}, #{inspect adapter}"
+      raise ArgumentError,
+            "missing :adapter configuration in " <>
+              "config #{inspect(otp_app)}, #{inspect(adapter)}"
     end
 
     {adapter, config}
-  end
-
-  def new_id(prefix \\ "DQ") do
-    <<a::32>> = :crypto.strong_rand_bytes(4)
-    "#{:io_lib.format("~s-~8.16.0b", [prefix, a])}"
   end
 end

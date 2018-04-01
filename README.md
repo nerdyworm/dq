@@ -27,23 +27,27 @@ defmodule Queue do
 end
 ```
 
+```elixir
+# lib/pool.ex
+defmodule Pool do
+  use DQ.Pool, otp_app: :example
+end
+```
+
 ``` elixir
 # start the DQ server to run a consumer
-worker(DQ, []),
+worker(Pool, []),
 ```
 
 ```elixir
 # config.exs
-config :dq, queues: [
-  Queue
-]
+config :example, Pool,
+   queues: [Queue],
+   min_demand: 1,
+   max_demand: 10,
+   after_empty_result_ms: 1000
 
-config :dq, server: [
-  min_demand: 1,
-  max_demand: 10,
-  after_empty_result_ms: 1000
-]
-
+# admin ui auth token
 config :dq, :token, "xxx"
 ```
 

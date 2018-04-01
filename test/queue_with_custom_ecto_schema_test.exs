@@ -11,7 +11,8 @@ defmodule QueueWithCustomEctoSchemaTest do
   end
 
   defmodule Queue do
-    use DQ.Queue, otp_app: :dq,
+    use DQ.Queue,
+      otp_app: :dq,
       adapter: DQ.Adapters.Ecto,
       repo: DQ.Repo,
       struct: YourJobSchema,
@@ -25,7 +26,7 @@ defmodule QueueWithCustomEctoSchemaTest do
 
   setup_all context do
     {:ok, pid} = DQ.Server.start_link([Queue])
-    on_exit(context, fn() -> Process.exit(pid, :exit) end)
+    on_exit(context, fn -> Process.exit(pid, :exit) end)
   end
 
   test "custom job structs can be ran" do
@@ -34,4 +35,3 @@ defmodule QueueWithCustomEctoSchemaTest do
     assert_receive :ack
   end
 end
-

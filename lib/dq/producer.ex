@@ -2,15 +2,18 @@ defmodule DQ.Producer do
   use GenStage
 
   defmodule State do
-    defstruct demand: 0, manager: nil, history: %{}
+    defstruct demand: 0, pool: nil, history: %{}
   end
 
-  def start_link(manager) do
-    GenStage.start_link(__MODULE__, manager, name: __MODULE__)
+  def name(pool) when is_nil(pool), do: __MODULE__
+  def name(pool), do: Module.concat(pool, Producer)
+
+  def start_link(pool) do
+    GenStage.start_link(__MODULE__, pool, name: name(pool))
   end
 
-  def init(manager) do
-    {:producer, %State{manager: manager}}
+  def init(pool) do
+    {:producer, %State{pool: pool}}
   end
 
   def handle_demand(incoming_demand, %State{demand: 0} = state) do
@@ -22,8 +25,8 @@ defmodule DQ.Producer do
     {:noreply, [], %State{state | demand: demand + incoming_demand}}
   end
 
-  def handle_info(:pop, %State{manager: manager, demand: demand, history: history} = state) do
-    {:ok, queue} = manager.next_queue
+  def handle_info(:pop, %State{pool: pool, demand: demand, history: history} = state) do
+    {:ok, queue} = pool.next_queue()
     {:ok, commands} = queue.pop(demand)
 
     new_messages_received = length(commands)
@@ -48,12 +51,13 @@ defmodule DQ.Producer do
   # If the next queue is the same queue, then backoff
   # If the next queue was empty last time, then backoff
   # Otherwise just try to pop messages from the next queue
-  defp handle_empty_messages(current_queue, %State{manager: manager, history: history}) do
-    {:ok, next} = manager.peak()
+  defp handle_empty_messages(current_queue, %State{pool: pool, history: history}) do
+    {:ok, next} = pool.peak()
 
     cond do
       next == current_queue || Map.get(history, next) == 0 ->
-        Process.send_after(self(), :pop, manager.after_empty_result_ms())
+        IO.puts("idle: #{pool.after_empty_result_ms()}")
+        Process.send_after(self(), :pop, pool.after_empty_result_ms())
 
       true ->
         Process.send(self(), :pop, [])
