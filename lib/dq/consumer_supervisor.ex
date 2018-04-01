@@ -17,7 +17,7 @@ defmodule DQ.ConsumerSupervisor do
       worker(Worker, [pool], restart: :temporary)
     ]
 
-    config = Application.get_env(:dq, :server, [])
+    config = pool.config()
     min_demand = Keyword.get(config, :min_demand, 1)
     max_demand = Keyword.get(config, :max_demand, 2)
 
