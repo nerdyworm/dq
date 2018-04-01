@@ -56,7 +56,6 @@ defmodule DQ.Producer do
 
     cond do
       next == current_queue || Map.get(history, next) == 0 ->
-        IO.puts("idle: #{pool.after_empty_result_ms()}")
         Process.send_after(self(), :pop, pool.after_empty_result_ms())
 
       true ->
