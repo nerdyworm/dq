@@ -228,6 +228,11 @@ defmodule DQ.Adapters.Sqs do
     |> Base.encode64()
   end
 
+  # json jobs... not ours
+  def decode("{" <> payload) do
+    %Job{payload: "{" <> payload}
+  end
+
   def decode(payload) do
     payload
     |> Base.decode64!()
