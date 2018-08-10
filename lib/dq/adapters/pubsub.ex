@@ -23,7 +23,8 @@ defmodule DQ.Adapters.Pubsub do
           messages: [
             %GoogleApi.PubSub.V1.Model.PubsubMessage{
               attributes: %{
-                "count" => "0"
+                "count" => "1",
+                "run_at" => "0"
               },
               data: encode(job)
             }
@@ -56,32 +57,36 @@ defmodule DQ.Adapters.Pubsub do
 
     jobs = decode_response(response)
 
-    # filter out jobs that need to be delayed
+    # kind of a hack
+    #
+    # There is no way to know how many times a message has been received
+    # from the pubsub api.  So we re queue jobs with the correct attributes
+    # set.  If the run_at is not yet passed we should just delayed the job
+    # until it is.
+    #
     now = DateTime.utc_now() |> DateTime.to_unix()
 
     jobs =
       Enum.filter(jobs, fn job ->
         run_at = Map.get(job.message.message.attributes || %{}, "run_at", "0")
         {run_at, ""} = Integer.parse(run_at)
-        IO.puts("#{now} #{run_at} #{run_at < now}")
 
         if run_at < now do
           true
         else
-          {:ok, response} =
+          {:ok, _response} =
             GoogleApi.PubSub.V1.Api.Projects.pubsub_projects_subscriptions_modify_ack_deadline(
               conn,
               project_id,
               topic_id,
-              body: %GoogleApi.PubSub.V1.Model.ModifyAckDeadlineRequest{
-                ackIds: [job.message.ackId],
-                ackDeadlineSeconds: 30
-              }
+              body:
+                %GoogleApi.PubSub.V1.Model.ModifyAckDeadlineRequest{
+                  ackIds: [job.message.ackId],
+                  ackDeadlineSeconds: run_at - now
+                }
+                |> IO.inspect()
             )
 
-          IO.puts("NOT RUNNING")
-          IO.puts("DEADLINE IN #{run_at - now}")
-          IO.puts("NOT RUNNING")
           false
         end
       end)
@@ -132,20 +137,20 @@ defmodule DQ.Adapters.Pubsub do
     intervals = queue.config |> Keyword.get(:retry_intervals)
 
     # IO.inspect(job.message)
-    count = Map.get(job.message.message.attributes || %{}, "count", "0")
+    count = Map.get(job.message.message.attributes || %{}, "count", "1")
     {count, ""} = Integer.parse(count)
-    # %{receipt_handle: receipt_handle, attributes: %{"approximate_receive_count" => count}} =
-    #   job.message
 
     retries = count - 1
     interval = Enum.at(intervals, retries)
 
-    run_at =
-      DateTime.utc_now()
-      |> DateTime.to_unix()
-      |> Kernel.+(30)
-
     if interval != nil do
+      job_copy = %Job{job | message: nil, error_count: count, error_message: message}
+
+      run_at =
+        DateTime.utc_now()
+        |> DateTime.to_unix()
+        |> Kernel.+(interval)
+
       {:ok, %GoogleApi.PubSub.V1.Model.PublishResponse{messageIds: _ids}} =
         GoogleApi.PubSub.V1.Api.Projects.pubsub_projects_topics_publish(
           conn,
@@ -160,7 +165,7 @@ defmodule DQ.Adapters.Pubsub do
                     "run_at" => "#{run_at}"
                   }
                   |> IO.inspect(),
-                data: encode(job)
+                data: encode(job_copy)
               }
             ]
           }

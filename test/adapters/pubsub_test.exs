@@ -8,7 +8,7 @@ defmodule QueAdaptersSqsTest do
         queue_name: "dq_test",
         dead_queue_name: "dq_test_error",
         queue_wait_time_seconds: 5,
-        retry_intervals: [1],
+        retry_intervals: [2, 4, 8],
         subscription_name: "dq-test",
         project_id: "random-testing-111111",
         topic_id: "dq-test"
@@ -32,10 +32,11 @@ defmodule QueAdaptersSqsTest do
   test "can pop one job and nack it" do
     assert :ok = @adapter.push(FakeQueue, __MODULE__, ["args"])
 
-    Enum.each(1..10, fn _ ->
+    Enum.each(1..20, fn _ ->
       assert {:ok, jobs} = @adapter.pop(FakeQueue, 10)
 
       Enum.each(jobs, fn job ->
+        IO.inspect(job)
         assert :ok = @adapter.nack(FakeQueue, job, "reasons")
       end)
     end)
