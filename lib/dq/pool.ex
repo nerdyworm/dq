@@ -61,7 +61,7 @@ defmodule DQ.Pool do
 
     defaults = [
       after_empty_result_ms: 5000,
-      min_demand: 1,
+      min_demand: 0,
       max_demand: 1
     ]
 
