@@ -100,8 +100,9 @@ defmodule DQ.Adapters.Pubsub do
 
   defp decode_response(%{receivedMessages: messages}) when is_list(messages) do
     Enum.map(messages, fn message ->
-      job = decode(message.message.data)
-      %Job{job | message: message}
+      data = Base.decode64!(message.message.data)
+      job = decode(data)
+      %Job{job | id: message.message.messageId, message: message}
     end)
   end
 
@@ -205,7 +206,6 @@ defmodule DQ.Adapters.Pubsub do
 
   def decode(payload) do
     payload
-    |> Base.decode64!()
     |> Encoder.decode()
   end
 end

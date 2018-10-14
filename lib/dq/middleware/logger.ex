@@ -5,8 +5,8 @@ defmodule DQ.Middleware.Logger do
   require Logger
 
   def call(ctx, next) do
-    started_at = DateTime.utc_now
-    Logger.info("#{log_context(ctx)} args=#{inspect ctx.job.args}")
+    started_at = DateTime.utc_now()
+    Logger.info("#{log_context(ctx)} args=#{inspect(ctx.job.args)}")
     results = run(ctx, next)
     Logger.info("#{log_context(ctx)} runtime=#{formatted_diff(delta(started_at))}")
     results
@@ -29,11 +29,11 @@ defmodule DQ.Middleware.Logger do
   end
 
   defp delta(started_at) do
-    now_usecs = DateTime.utc_now |> DateTime.to_unix(:microseconds)
+    now_usecs = DateTime.utc_now() |> DateTime.to_unix(:microseconds)
     started_usecs = started_at |> DateTime.to_unix(:microseconds)
     now_usecs - started_usecs
   end
 
-  defp formatted_diff(diff) when diff > 1000, do: [diff |> div(1000) |> Integer.to_string, "ms"]
-  defp formatted_diff(diff), do: [diff |> Integer.to_string, "µs"]
+  defp formatted_diff(diff) when diff > 1000, do: [diff |> div(1000) |> Integer.to_string(), "ms"]
+  defp formatted_diff(diff), do: [diff |> Integer.to_string(), "µs"]
 end

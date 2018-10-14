@@ -15,6 +15,10 @@ defmodule DQ.Pool do
       @config parse_config(__MODULE__, opts)
       @tasks Module.concat(__MODULE__, TaskSupervisor)
 
+      def start_link do
+        start_link(@config[:queues])
+      end
+
       def start_link(queues) do
         pool = __MODULE__
 
