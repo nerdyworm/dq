@@ -13,6 +13,3 @@ config :dq, DQ.Repo,
   database: "que_test",
   hostname: "localhost",
   pool_size: 10
-
-config :goth,
-  json: {:system, "GCP_CREDENTIALS_JSON"}

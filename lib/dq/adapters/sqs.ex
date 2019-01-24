@@ -95,7 +95,7 @@ defmodule DQ.Adapters.Sqs do
     name = queue.config |> Keyword.get(:queue_name)
 
     jobs
-    |> Enum.chunk(10, 10, [])
+    |> Enum.chunk_every(10)
     |> Enum.each(fn chunk ->
       start = :os.system_time(:milli_seconds)
 

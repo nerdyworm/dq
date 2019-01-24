@@ -25,6 +25,12 @@ defmodule DQ.Producer do
     {:noreply, [], %State{state | demand: demand + incoming_demand}}
   end
 
+  def handle_info({:ssl_closed, _}, %State{} = state) do
+    # https://github.com/benoitc/hackney/issues/464
+    # https://bugs.erlang.org/browse/ERL-371
+    {:noreply, [], state}
+  end
+
   def handle_info(:pop, %State{pool: pool, demand: demand, history: history} = state) do
     {:ok, queue} = pool.next_queue()
     {:ok, commands} = queue.pop(demand)

@@ -36,12 +36,8 @@ defmodule DQ.Mixfile do
       {:ex_aws, "~> 2.0"},
       {:ex_aws_sqs, "~> 2.0"},
       {:poison, "~> 3.0"},
-      {:hackney, "~> 1.9"},
-      {:sweet_xml, ">= 0.5.0"},
-
-      # Google Cloud Pubsub
-      {:diplomat, "~> 0.2"},
-      {:google_api_pub_sub, "~> 0.0.1"}
+      {:hackney, "~> 1.15"},
+      {:sweet_xml, ">= 0.5.0"}
     ]
   end
 end

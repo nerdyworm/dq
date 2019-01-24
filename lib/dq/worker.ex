@@ -1,13 +1,7 @@
 defmodule DQ.Worker do
   require Logger
 
-  use GenServer
-
-  alias DQ.{
-    Context,
-    Middleware,
-    TaskSupervisor
-  }
+  alias DQ.{Context, Middleware}
 
   def run(%{queue: queue} = job) do
     job
