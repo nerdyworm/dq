@@ -52,6 +52,16 @@ defmodule DQ.Pool do
       def start_task(job) do
         Task.Supervisor.async_nolink(@tasks, DQ.Worker, :run, [job])
       end
+
+      def child_spec(opts) do
+        %{
+          id: __MODULE__,
+          start: {__MODULE__, :start_link, [opts]},
+          type: :supervisor,
+          restart: :permanent,
+          shutdown: 500
+        }
+      end
     end
   end
 
