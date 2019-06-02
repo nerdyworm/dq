@@ -116,12 +116,12 @@ defmodule DQ.Adapters.Sqs do
     end)
   end
 
-  def push(queue, module, args, _opts \\ []) do
+  def push(queue, module, args, opts \\ []) do
     start = :os.system_time(:milli_seconds)
     name = queue.config |> Keyword.get(:queue_name)
     job = Job.new(queue, module, args)
 
-    case SQS.send_message(name, job |> encode) |> ExAws.request() do
+    case SQS.send_message(name, job |> encode, opts) |> ExAws.request() do
       {:ok, _} ->
         Logger.info(
           "push=#{module} args=#{inspect(args)} runtime=#{:os.system_time(:milli_seconds) - start}ms"
