@@ -39,6 +39,10 @@ defmodule DQ.Collector do
     end
   end
 
+  def handle_info({:ssl_closed, _}, state) do
+    {:noreply, state}
+  end
+
   def handle_info(:expired, state) do
     {:noreply, flush(state)}
   end
