@@ -26,8 +26,6 @@ defmodule DQ.Collector do
   def handle_call({:collect, queue, pair}, from, state) do
     state = %{state | buffer: [{queue, pair, from} | state.buffer]}
 
-    IO.puts("COLLECTING: #{length(state.buffer)}")
-
     if length(state.buffer) < state.max do
       {:noreply, timer(state)}
     else
@@ -36,7 +34,6 @@ defmodule DQ.Collector do
   end
 
   def handle_info(:expired, state) do
-    IO.puts("EXPIRED: #{length(state.buffer)}")
     {:noreply, flush(state)}
   end
 
@@ -61,6 +58,8 @@ defmodule DQ.Collector do
   end
 
   def flush(state) do
+    Process.cancel_timer(state.timer)
+
     [{queue, _, _} | _] = state.buffer
 
     pairs =
@@ -74,9 +73,6 @@ defmodule DQ.Collector do
       GenServer.reply(from, :ok)
     end)
 
-    Process.cancel_timer(state.timer)
-
-    IO.puts("FLUSHED :#{length(pairs)}")
     %{state | buffer: []}
   end
 end

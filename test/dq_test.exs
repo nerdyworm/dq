@@ -13,7 +13,7 @@ defmodule DQTest do
   end
 
   test "collector" do
-    {:ok, _pid} = DQ.Collector.start_link(:ok)
+    {:ok, _pid} = DQ.Collector.start_link(max: 10, max_ms: 50)
 
     Enum.each(1..25, fn i ->
       spawn(fn ->
@@ -23,7 +23,7 @@ defmodule DQTest do
 
     assert_receive {:ok, 10}
     assert_receive {:ok, 10}
-    assert_receive {:ok, 5}, 600
+    assert_receive {:ok, 5}
   end
 
   def push(jobs) do
