@@ -21,12 +21,15 @@ defmodule DQ.Worker do
       {:ok, :ok} ->
         :ok = queue.ack(job)
 
-      {:exit, reason} ->
-        message = Exception.format(:exit, reason, System.stacktrace())
+      {:ok, {:error, message}} ->
         :ok = queue.nack(job, message)
 
+      # {:exit, reason} ->
+      #   message = Exception.format(:exit, reason, System.stacktrace())
+      #   :ok = queue.nack(job, message)
+
       nil ->
-        Logger.warn("Failed to get a result in #{timeout}ms")
+        Logger.warn("[dq] job timed out #{timeout}ms")
     end
   end
 end

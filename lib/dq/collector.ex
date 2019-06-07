@@ -1,0 +1,82 @@
+defmodule DQ.Collector do
+  use GenServer
+
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+
+  def collect(queue, {mod, args}) do
+    GenServer.call(__MODULE__, {:collect, queue, {mod, args}})
+  end
+
+  def collect(queue, {mod, args, opts}) do
+    GenServer.call(__MODULE__, {:collect, queue, {mod, args, opts}})
+  end
+
+  def init(opts) do
+    {:ok,
+     %{
+       buffer: [],
+       timer: nil,
+       max: Keyword.get(opts, :max, 10),
+       max_ms: Keyword.get(opts, :max_ms, 500)
+     }}
+  end
+
+  def handle_call({:collect, queue, pair}, from, state) do
+    state = %{state | buffer: [{queue, pair, from} | state.buffer]}
+
+    IO.puts("COLLECTING: #{length(state.buffer)}")
+
+    if length(state.buffer) < state.max do
+      {:noreply, timer(state)}
+    else
+      {:noreply, flush(state)}
+    end
+  end
+
+  def handle_info(:expired, state) do
+    IO.puts("EXPIRED: #{length(state.buffer)}")
+    {:noreply, flush(state)}
+  end
+
+  def handle_info(:flush, %{buffer: []} = state) do
+    {:noreply, state}
+  end
+
+  def handle_info(:flush, state) do
+    {:noreply, flush(state)}
+  end
+
+  def timer(%{timer: nil} = state) do
+    timer = Process.send_after(self(), :expired, state.max_ms)
+    %{state | timer: timer}
+  end
+
+  def timer(%{timer: timer} = state) do
+    Process.cancel_timer(timer)
+
+    %{state | timer: nil}
+    |> timer()
+  end
+
+  def flush(state) do
+    [{queue, _, _} | _] = state.buffer
+
+    pairs =
+      Enum.map(state.buffer, fn {_, pair, _} ->
+        pair
+      end)
+
+    :ok = apply(queue, :push, [pairs])
+
+    Enum.each(state.buffer, fn {_, _, from} ->
+      GenServer.reply(from, :ok)
+    end)
+
+    Process.cancel_timer(state.timer)
+
+    IO.puts("FLUSHED :#{length(pairs)}")
+    %{state | buffer: []}
+  end
+end

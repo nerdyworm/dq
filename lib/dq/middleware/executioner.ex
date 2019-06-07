@@ -1,20 +1,23 @@
 defmodule DQ.Middleware.Executioner do
   alias DQ.{
     Context,
-    Job,
+    Job
   }
 
-  def call(%Context{queue: queue, job: %{module: module} = job}, _next) when is_nil(module)  do
-    case :erlang.apply(queue, :run, [job]) do
-      :ok -> :ok
-    end
+  def call(%Context{queue: queue, job: %{module: module} = job}, _next) when is_nil(module) do
+    try_apply(queue, [job])
   end
 
   def call(%Context{job: %Job{module: module, args: args}}, _next) do
-    case :erlang.apply(module, :run, args) do
-      :ok -> :ok
+    try_apply(module, args)
+  end
+
+  defp try_apply(m, args) do
+    try do
+      :ok = apply(m, :run, args)
+    rescue
+      error ->
+        {:error, Exception.format(:error, error, __STACKTRACE__)}
     end
   end
 end
-
-

@@ -31,6 +31,7 @@ defmodule DQ.Mixfile do
       # Ecto Adapter
       {:postgrex, ">= 0.0.0", optional: true},
       {:ecto, ">= 0.0.0", optional: true},
+      {:ecto_sql, ">= 0.0.0", optional: true},
 
       # AWS Sqs
       {:ex_aws, "~> 2.0"},

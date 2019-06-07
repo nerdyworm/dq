@@ -76,7 +76,7 @@ defmodule DQ.Adapters.Sqs do
         {:ok, _} ->
           case SQS.delete_message(name, receipt_handle) |> ExAws.request() do
             {:ok, _} ->
-              Logger.error("#{job.id} moved to dead")
+              Logger.error("#{job.id} moved to dead #{job.message}")
               :ok
           end
       end
@@ -100,9 +100,17 @@ defmodule DQ.Adapters.Sqs do
       start = :os.system_time(:milli_seconds)
 
       payload =
-        Enum.map(chunk, fn {module, args} ->
-          job = Job.new(queue, module, args)
-          [id: job.id, message_body: job |> encode]
+        Enum.map(chunk, fn
+          {module, args} ->
+            job = Job.new(queue, module, args)
+            [id: job.id, message_body: job |> encode]
+
+          {module, args, opts} ->
+            job = Job.new(queue, module, args)
+
+            opts
+            |> Keyword.put(:id, job.id)
+            |> Keyword.put(:message_body, job |> encode)
         end)
 
       case SQS.send_message_batch(name, payload) |> ExAws.request() do

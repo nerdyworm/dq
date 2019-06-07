@@ -46,7 +46,19 @@ defmodule MiddlewareTest do
     assert_receive :ran
   end
 
-  def run(_args) do
+  test "handles exceptions and nacks" do
+    %DQ.Job{args: [:fail], queue: __MODULE__}
+    |> Context.new()
+    |> Middleware.run([DQ.Middleware.Executioner])
+
+    assert_receive :ran
+  end
+
+  def run(%{args: [:fail]}) do
+    raise "Error, should be caught"
+  end
+
+  def run(_job) do
     Process.send(self(), :ran, [])
     :ok
   end
