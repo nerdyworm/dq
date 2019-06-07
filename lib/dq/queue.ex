@@ -39,10 +39,6 @@ defmodule DQ.Queue do
         {:ok, Enum.map(jobs, &put_queue/1)}
       end
 
-      def collect(job) do
-        DQ.Collector.collect(job)
-      end
-
       defp put_queue(job) do
         %{job | queue: @queue}
       end

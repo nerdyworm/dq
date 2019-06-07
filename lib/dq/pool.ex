@@ -14,12 +14,14 @@ defmodule DQ.Pool do
 
       @config parse_config(__MODULE__, opts)
       @tasks Module.concat(__MODULE__, TaskSupervisor)
+      @collector Module.concat(__MODULE__, Collector)
 
       def start_link(queues) do
         pool = __MODULE__
 
         children = [
           # TODO - allow the manager strategy to be configurable
+          worker(DQ.Collector, [[name: @collector, func: :ack, max: 10, max_ms: 100]]),
           worker(DQ.Server.WeightedRoundRobin, [queues, pool]),
           worker(Producer, [pool]),
           supervisor(ConsumerSupervisor, [pool]),
@@ -31,6 +33,10 @@ defmodule DQ.Pool do
 
       def config do
         @config
+      end
+
+      def collector do
+        @collector
       end
 
       def after_empty_result_ms do

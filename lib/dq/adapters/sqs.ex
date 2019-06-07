@@ -46,6 +46,19 @@ defmodule DQ.Adapters.Sqs do
     end
   end
 
+  def ack(queue, jobs) when is_list(jobs) do
+    name = queue.config |> Keyword.get(:queue_name)
+
+    jobs =
+      Enum.map(jobs, fn job ->
+        [receipt_handle: job.message.receipt_handle, id: job.id]
+      end)
+
+    case SQS.delete_message_batch(name, jobs) |> ExAws.request() do
+      {:ok, _} -> :ok
+    end
+  end
+
   def ack(queue, job) do
     name = queue.config |> Keyword.get(:queue_name)
 

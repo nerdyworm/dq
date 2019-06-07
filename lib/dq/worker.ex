@@ -19,7 +19,7 @@ defmodule DQ.Worker do
 
     case Task.yield(task, timeout) || Task.shutdown(task) do
       {:ok, :ok} ->
-        :ok = queue.ack(job)
+        :ok = DQ.Collector.collect(pool.collector(), queue, job)
 
       {:ok, {:error, message}} ->
         :ok = queue.nack(job, message)

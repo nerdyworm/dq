@@ -2,22 +2,28 @@ defmodule DQ.Collector do
   use GenServer
 
   def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    {name, opts} = Keyword.pop(opts, :name)
+    GenServer.start_link(__MODULE__, opts, name: name)
   end
 
-  def collect(queue, {mod, args}) do
-    GenServer.call(__MODULE__, {:collect, queue, {mod, args}})
+  def collect(server, queue, job) do
+    GenServer.call(server, {:collect, queue, job})
   end
 
-  def collect(queue, {mod, args, opts}) do
-    GenServer.call(__MODULE__, {:collect, queue, {mod, args, opts}})
-  end
+  # def collect(queue, {mod, args}) do
+  #   GenServer.call(__MODULE__, {:collect, queue, {mod, args}})
+  # end
+
+  # def collect(queue, {mod, args, opts}) do
+  #   GenServer.call(__MODULE__, {:collect, queue, {mod, args, opts}})
+  # end
 
   def init(opts) do
     {:ok,
      %{
        buffer: [],
        timer: nil,
+       func: Keyword.get(opts, :func, :push),
        max: Keyword.get(opts, :max, 10),
        max_ms: Keyword.get(opts, :max_ms, 500)
      }}
@@ -67,7 +73,7 @@ defmodule DQ.Collector do
         pair
       end)
 
-    :ok = apply(queue, :push, [pairs])
+    :ok = apply(queue, state.func, [pairs])
 
     Enum.each(state.buffer, fn {_, _, from} ->
       GenServer.reply(from, :ok)

@@ -13,11 +13,11 @@ defmodule DQTest do
   end
 
   test "collector" do
-    {:ok, _pid} = DQ.Collector.start_link(max: 10, max_ms: 50)
+    {:ok, _pid} = DQ.Collector.start_link(max: 10, max_ms: 50, name: :test)
 
     Enum.each(1..25, fn i ->
       spawn(fn ->
-        :ok = DQ.Collector.collect(__MODULE__, {__MODULE__, [i]})
+        :ok = DQ.Collector.collect(:test, __MODULE__, {__MODULE__, [i]})
       end)
     end)
 
