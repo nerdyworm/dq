@@ -36,6 +36,6 @@ defmodule QueueWithCustomEctoSchemaTest do
   test "custom job structs can be ran" do
     Process.register(self(), :test)
     %YourJobSchema{} = DQ.Repo.insert!(%YourJobSchema{})
-    assert_receive :ack
+    assert_receive :ack, 5000
   end
 end
