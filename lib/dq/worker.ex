@@ -18,18 +18,23 @@ defmodule DQ.Worker do
     task = pool.start_task(job)
 
     case Task.yield(task, timeout) || Task.shutdown(task) do
-      {:ok, :ok} ->
-        :ok = DQ.Collector.collect(pool.collector(), queue, job)
-
       {:ok, {:error, message}} ->
         :ok = queue.nack(job, message)
 
-      # {:exit, reason} ->
-      #   message = Exception.format(:exit, reason, System.stacktrace())
-      #   :ok = queue.nack(job, message)
+      {:ok, _} ->
+        :ok = pool.batch_ack(queue, job)
 
       nil ->
-        Logger.warn("[dq] job timed out #{timeout}ms")
+        :ok = log_timeout(queue, job, timeout)
     end
+  end
+
+  defp log_timeout(queue, job, timeout) do
+    if job.error_count > 0 do
+      "#{queue} #{job.id} TIMEOUT #{timeout}ms tries=#{job.error_count}"
+    else
+      "#{queue} #{job.id} TIMEOUT #{timeout}ms"
+    end
+    |> Logger.error()
   end
 end

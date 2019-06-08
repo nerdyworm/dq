@@ -35,7 +35,7 @@ defmodule DQ.MultipleQueuesTest do
   end
 
   test "work puller" do
-    {:ok, _pid} = Pool.start_link([A, B])
+    {:ok, _pid} = Pool.start_link(queues: [A, B])
     assert :ok = A.push(__MODULE__, ["A"])
     assert :ok = B.push(__MODULE__, ["B"])
     assert_receive :A, 10_000

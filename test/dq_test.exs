@@ -12,8 +12,8 @@ defmodule DQTest do
     assert DQ.new_id() != DQ.new_id()
   end
 
-  test "collector" do
-    {:ok, _pid} = DQ.Collector.start_link(max: 10, max_ms: 50, name: :test)
+  test "collector batches" do
+    {:ok, _pid} = DQ.Collector.start_link(max: 10, deadline_ms: 50, name: :test)
 
     Enum.each(1..25, fn i ->
       spawn(fn ->
@@ -24,6 +24,21 @@ defmodule DQTest do
     assert_receive {:ok, 10}
     assert_receive {:ok, 10}
     assert_receive {:ok, 5}
+  end
+
+  test "collector waits until the deadline to send" do
+    {:ok, _pid} = DQ.Collector.start_link(max: 10, deadline_ms: 50, name: :test)
+
+    spawn(fn ->
+      :ok = DQ.Collector.collect(:test, __MODULE__, {__MODULE__, [:ok]})
+    end)
+
+    spawn(fn ->
+      :timer.sleep(40)
+      :ok = DQ.Collector.collect(:test, __MODULE__, {__MODULE__, [:ok]})
+    end)
+
+    assert_receive {:ok, 2}, 55
   end
 
   def push(jobs) do

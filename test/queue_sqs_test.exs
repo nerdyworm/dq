@@ -16,7 +16,7 @@ defmodule QueueSqsTest do
   end
 
   setup_all context do
-    {:ok, pid} = Pool.start_link([Queue])
+    {:ok, pid} = Pool.start_link(queues: [Queue])
     on_exit(context, fn -> Process.exit(pid, :exit) end)
   end
 

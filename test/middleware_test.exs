@@ -55,6 +55,7 @@ defmodule MiddlewareTest do
   end
 
   def run(%{args: [:fail]}) do
+    Process.send(self(), :ran, [])
     raise "Error, should be caught"
   end
 

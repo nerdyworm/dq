@@ -70,6 +70,10 @@ defmodule DQ.Adapters.Ecto do
     {:ok, jobs}
   end
 
+  def ack(queue, jobs) when is_list(jobs) do
+    Enum.each(jobs, &ack(queue, &1))
+  end
+
   def ack(queue, job) do
     %Postgrex.Result{num_rows: 1} = sql(queue, Statements.ack(), [job.id])
     :ok

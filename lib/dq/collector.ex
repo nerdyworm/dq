@@ -10,14 +10,6 @@ defmodule DQ.Collector do
     GenServer.call(server, {:collect, queue, job})
   end
 
-  # def collect(queue, {mod, args}) do
-  #   GenServer.call(__MODULE__, {:collect, queue, {mod, args}})
-  # end
-
-  # def collect(queue, {mod, args, opts}) do
-  #   GenServer.call(__MODULE__, {:collect, queue, {mod, args, opts}})
-  # end
-
   def init(opts) do
     {:ok,
      %{
@@ -25,12 +17,12 @@ defmodule DQ.Collector do
        timer: nil,
        func: Keyword.get(opts, :func, :push),
        max: Keyword.get(opts, :max, 10),
-       max_ms: Keyword.get(opts, :max_ms, 500)
+       deadline_ms: Keyword.get(opts, :deadline_ms, 500)
      }}
   end
 
-  def handle_call({:collect, queue, pair}, from, state) do
-    state = %{state | buffer: [{queue, pair, from} | state.buffer]}
+  def handle_call({:collect, queue, job}, from, state) do
+    state = %{state | buffer: [{queue, job, from} | state.buffer]}
 
     if length(state.buffer) < state.max do
       {:noreply, timer(state)}
@@ -43,46 +35,49 @@ defmodule DQ.Collector do
     {:noreply, state}
   end
 
-  def handle_info(:expired, state) do
-    {:noreply, flush(state)}
-  end
-
-  def handle_info(:flush, %{buffer: []} = state) do
+  def handle_info({:DOWN, _ref, :process, _pid, :normal}, state) do
     {:noreply, state}
   end
 
-  def handle_info(:flush, state) do
+  def handle_info(:deadline, state) do
     {:noreply, flush(state)}
   end
 
   def timer(%{timer: nil} = state) do
-    timer = Process.send_after(self(), :expired, state.max_ms)
+    timer = Process.send_after(self(), :deadline, state.deadline_ms)
     %{state | timer: timer}
   end
 
-  def timer(%{timer: timer} = state) do
-    Process.cancel_timer(timer)
-
-    %{state | timer: nil}
-    |> timer()
+  def timer(state) do
+    state
   end
 
-  def flush(state) do
-    Process.cancel_timer(state.timer)
+  def flush(%{buffer: []} = state) do
+    state
+  end
 
-    [{queue, _, _} | _] = state.buffer
+  def flush(%{buffer: buffer, timer: timer} = state) do
+    if timer, do: Process.cancel_timer(timer)
 
-    pairs =
-      Enum.map(state.buffer, fn {_, pair, _} ->
-        pair
+    pid =
+      spawn_link(fn ->
+        [{queue, _, _} | _] = buffer
+
+        jobs =
+          Enum.map(buffer, fn {_, job, _} ->
+            job
+          end)
+
+        # TODO - retry these batches
+        :ok = apply(queue, state.func, [jobs])
+
+        Enum.each(buffer, fn {_, _, from} ->
+          GenServer.reply(from, :ok)
+        end)
       end)
 
-    :ok = apply(queue, state.func, [pairs])
+    Process.monitor(pid)
 
-    Enum.each(state.buffer, fn {_, _, from} ->
-      GenServer.reply(from, :ok)
-    end)
-
-    %{state | buffer: []}
+    %{state | timer: nil, buffer: []}
   end
 end

@@ -30,7 +30,7 @@ defmodule DQPoolTest do
   end
 
   test "can spawn a pool" do
-    {:ok, _pid} = Pool.start_link([Queue])
+    {:ok, _pid} = Pool.start_link(queues: [Queue])
     assert :ok = Queue.push(__MODULE__, ["A"])
     assert :ok = Queue.push(__MODULE__, ["B"])
     assert_receive :A, 10_000
