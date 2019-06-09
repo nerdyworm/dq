@@ -26,6 +26,5 @@ defmodule DQ.ConsumerSupervisor do
      subscribe_to: [
        {DQ.Producer.name(pool), min_demand: min_demand, max_demand: max_demand}
      ]}
-    |> IO.inspect()
   end
 end
