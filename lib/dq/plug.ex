@@ -7,6 +7,7 @@ defmodule DQ.Plug do
 
   def call(conn, opts) do
     namespace = opts[:namespace] || "dq"
+
     Plug.Conn.assign(conn, :namespace, namespace)
     |> namespace(opts, namespace)
   end
@@ -18,11 +19,11 @@ defmodule DQ.Plug do
   defmodule Router do
     use Plug.Router
 
-    plug CORSPlug, headers: ["*"]
-    plug Plug.Parsers, parsers: [:json], json_decoder: Poison
-    plug :auth
-    plug :match
-    plug :dispatch
+    plug(CORSPlug, headers: ["*"])
+    plug(Plug.Parsers, parsers: [:json], json_decoder: Poison)
+    plug(:auth)
+    plug(:match)
+    plug(:dispatch)
 
     def init(opts) do
       opts
@@ -30,9 +31,9 @@ defmodule DQ.Plug do
 
     def auth(conn, _opts) do
       incoming = get_req_header(conn, "x-dq-authorization")
-      token    = Application.get_env(:dq, :token, "")
+      token = Application.get_env(:dq, :token, "")
       # if "#{incoming}" == "#{token}" do
-        conn
+      conn
       # else
       #   conn
       #   |> send_resp(403, "Invalid token")
@@ -48,8 +49,9 @@ defmodule DQ.Plug do
 
     get "/api/queues" do
       queues = Application.get_env(:dq, :queues, [])
+
       data =
-        Enum.map(queues, fn(queue) ->
+        Enum.map(queues, fn queue ->
           {:ok, info} = queue.info()
           render_queue(queue, info)
         end)
@@ -58,14 +60,14 @@ defmodule DQ.Plug do
     end
 
     get "/api/queues/:name" do
-      queue = name |> String.to_existing_atom
+      queue = name |> String.to_existing_atom()
       {:ok, info} = queue.info
       data = render_queue(queue, info)
       json(conn, 200, data)
     end
 
     put "/api/queues/:name/dead_purge" do
-      queue = name |> String.to_existing_atom
+      queue = name |> String.to_existing_atom()
       :ok = queue.dead_purge
 
       conn
@@ -74,7 +76,7 @@ defmodule DQ.Plug do
     end
 
     put "/api/jobs/retry" do
-      queue = conn.params["queue"] |> String.to_atom
+      queue = conn.params["queue"] |> String.to_atom()
       job = queue.decode(conn.params["encoded"])
       :ok = queue.dead_retry(job)
 
@@ -84,7 +86,7 @@ defmodule DQ.Plug do
     end
 
     put "/api/jobs/ack" do
-      queue = conn.params["queue"] |> String.to_atom
+      queue = conn.params["queue"] |> String.to_atom()
       job = queue.decode(conn.params["encoded"])
       :ok = queue.dead_ack(job)
 
@@ -94,12 +96,11 @@ defmodule DQ.Plug do
     end
 
     get "/api/queues/:name/dead" do
-      queue = name |> String.to_existing_atom
+      queue = name |> String.to_existing_atom()
       {:ok, dead} = queue.dead
-      jobs = Enum.map(dead, &(render_job(queue, &1)))
+      jobs = Enum.map(dead, &render_job(queue, &1))
       json(conn, 200, jobs)
     end
-
 
     def json(conn, code, body) do
       conn

@@ -20,7 +20,7 @@ defmodule QueueWithCustomEctoSchemaTest do
       adapter: DQ.Adapters.Ecto,
       repo: DQ.Repo,
       struct: YourJobSchema,
-      after_empty_result_idle_ms: 500
+      after_empty_result_ms: 1
 
     def run(%YourJobSchema{}) do
       Process.send(:test, :ack, [])
@@ -36,6 +36,6 @@ defmodule QueueWithCustomEctoSchemaTest do
   test "custom job structs can be ran" do
     Process.register(self(), :test)
     %YourJobSchema{} = DQ.Repo.insert!(%YourJobSchema{})
-    assert_receive :ack, 5000
+    assert_receive :ack, 500
   end
 end
