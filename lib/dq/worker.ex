@@ -22,7 +22,7 @@ defmodule DQ.Worker do
         :ok = queue.nack(job, message)
 
       {:ok, _} ->
-        :ok = pool.batch_ack(queue, job)
+        :ok = pool.async_batch_ack(queue, job)
 
       nil ->
         :ok = log_timeout(queue, job, timeout)

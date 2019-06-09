@@ -10,6 +10,10 @@ defmodule DQ.Collector do
     GenServer.call(server, {:collect, queue, job})
   end
 
+  def async_collect(server, queue, job) do
+    GenServer.cast(server, {:collect, queue, job})
+  end
+
   def init(opts) do
     {:ok,
      %{
@@ -19,6 +23,16 @@ defmodule DQ.Collector do
        max: Keyword.get(opts, :max, 10),
        deadline_ms: Keyword.get(opts, :deadline_ms, 500)
      }}
+  end
+
+  def handle_cast({:collect, queue, job}, state) do
+    state = %{state | buffer: [{queue, job, :async} | state.buffer]}
+
+    if length(state.buffer) < state.max do
+      {:noreply, timer(state)}
+    else
+      {:noreply, flush(state)}
+    end
   end
 
   def handle_call({:collect, queue, job}, from, state) do
@@ -71,8 +85,12 @@ defmodule DQ.Collector do
         # TODO - retry these batches
         :ok = apply(queue, state.func, [jobs])
 
-        Enum.each(buffer, fn {_, _, from} ->
-          GenServer.reply(from, :ok)
+        Enum.each(buffer, fn
+          {_, _, :async} ->
+            :ok
+
+          {_, _, from} ->
+            GenServer.reply(from, :ok)
         end)
       end)
 

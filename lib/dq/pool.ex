@@ -82,6 +82,10 @@ defmodule DQ.Pool do
         :ok = Collector.collect(@acks, queue, job)
       end
 
+      def async_batch_ack(queue, job) do
+        :ok = Collector.async_collect(@acks, queue, job)
+      end
+
       def batch_push(queue, job) do
         :ok = Collector.collect(@pushes, queue, job)
       end
