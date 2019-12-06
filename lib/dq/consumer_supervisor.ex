@@ -8,11 +8,11 @@ defmodule DQ.ConsumerSupervisor do
   def name(pool) when is_nil(pool), do: __MODULE__
   def name(pool), do: Module.concat(pool, ConsumerSupervisor)
 
-  def start_link(pool \\ nil) do
-    ConsumerSupervisor.start_link(__MODULE__, pool, name: name(pool))
+  def start_link(pool, producers) do
+    ConsumerSupervisor.start_link(__MODULE__, [pool, producers], name: name(pool))
   end
 
-  def init(pool) do
+  def init([pool, producers]) do
     children = [
       worker(Worker, [pool], restart: :temporary)
     ]
@@ -21,10 +21,11 @@ defmodule DQ.ConsumerSupervisor do
     min_demand = Keyword.get(config, :min_demand, 1)
     max_demand = Keyword.get(config, :max_demand, 2)
 
-    {:ok, children,
-     strategy: :one_for_one,
-     subscribe_to: [
-       {DQ.Producer.name(pool), min_demand: min_demand, max_demand: max_demand}
-     ]}
+    producers =
+      for idx <- 1..producers do
+        {DQ.Producer.name(pool, idx), min_demand: min_demand, max_demand: max_demand}
+      end
+
+    {:ok, children, strategy: :one_for_one, subscribe_to: producers}
   end
 end

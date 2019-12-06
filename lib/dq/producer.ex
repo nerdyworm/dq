@@ -2,18 +2,22 @@ defmodule DQ.Producer do
   use GenStage
 
   defmodule State do
-    defstruct demand: 0, pool: nil, history: %{}
+    defstruct demand: 0, pool: nil, idx: 0, history: %{}
   end
 
   def name(pool) when is_nil(pool), do: __MODULE__
-  def name(pool), do: Module.concat(pool, Producer)
 
-  def start_link(pool) do
-    GenStage.start_link(__MODULE__, pool, name: name(pool))
+  def name(pool, idx \\ 1),
+    do:
+      Module.concat(pool, Producer)
+      |> Module.concat(String.to_atom(to_string(idx)))
+
+  def start_link(pool, idx) do
+    GenStage.start_link(__MODULE__, [pool, idx], name: name(pool, idx))
   end
 
-  def init(pool) do
-    {:producer, %State{pool: pool}}
+  def init([pool, idx]) do
+    {:producer, %State{pool: pool, idx: idx}}
   end
 
   def handle_demand(incoming_demand, %State{demand: 0} = state) do
@@ -37,6 +41,12 @@ defmodule DQ.Producer do
 
     new_messages_received = length(commands)
     new_demand = demand - new_messages_received
+
+    IO.puts(
+      "[producer] [idx:#{state.idx}] jobs=#{length(commands)} old_demand=#{demand} new_demand=#{
+        new_demand
+      }"
+    )
 
     cond do
       new_demand == 0 ->

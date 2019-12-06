@@ -13,8 +13,9 @@ defmodule DQ.Adapters.Sqs do
 
   def info(queue) do
     {:ok, info} = queue.config |> Keyword.get(:queue_name) |> info_by_queue
-    {:ok, dead} = queue.config |> Keyword.get(:dead_queue_name) |> info_by_queue
-    {:ok, %Info{info | dead: dead.pending + dead.running}}
+    {:ok, info}
+    # {:ok, dead} = queue.config |> Keyword.get(:dead_queue_name) |> info_by_queue
+    # {:ok, %Info{info | dead: dead.pending + dead.running}}
   end
 
   def purge(queue) do
@@ -54,6 +55,8 @@ defmodule DQ.Adapters.Sqs do
         [receipt_handle: job.message.receipt_handle, id: job.id]
       end)
 
+    IO.puts("ack #{length(jobs)}")
+
     case SQS.delete_message_batch(name, jobs) |> ExAws.request() do
       {:ok, _} -> :ok
     end
@@ -85,13 +88,13 @@ defmodule DQ.Adapters.Sqs do
       job = %Job{job | status: "dead", error_message: message, message: nil}
       dead_queue_name = queue.config |> Keyword.get(:dead_queue_name)
 
-      case SQS.send_message(dead_queue_name, job |> encode) |> ExAws.request() do
+      dead_queue = queue.config |> Keyword.get(:dead_queue)
+      :ok = dead_queue.push(job.module, job.args)
+
+      case SQS.delete_message(name, receipt_handle) |> ExAws.request() do
         {:ok, _} ->
-          case SQS.delete_message(name, receipt_handle) |> ExAws.request() do
-            {:ok, _} ->
-              Logger.error("#{job.id} moved to dead #{job.message}")
-              :ok
-          end
+          Logger.error("#{job.id} moved to dead #{job.message}")
+          :ok
       end
     end
   end
@@ -186,7 +189,8 @@ defmodule DQ.Adapters.Sqs do
   end
 
   def dead(queue) do
-    queue_name = queue.config |> Keyword.get(:dead_queue_name)
+    # queue_name = queue.config |> Keyword.get(:dead_queue_name)
+    queue_name = queue.config |> Keyword.get(:queue_name)
 
     {:ok, response} =
       SQS.receive_message(

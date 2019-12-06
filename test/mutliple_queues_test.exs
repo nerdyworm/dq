@@ -2,7 +2,7 @@ defmodule DQ.MultipleQueuesTest do
   use ExUnit.Case
 
   defmodule Pool do
-    use DQ.Pool, otp_app: :dq, after_empty_result_ms: 500
+    use DQ.Pool, otp_app: :dq, after_empty_result_ms: 500, producers: 10
   end
 
   defmodule A do

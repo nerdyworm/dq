@@ -18,6 +18,9 @@ defmodule DQ.Middleware.Executioner do
     rescue
       error ->
         {:error, Exception.format(:error, error, __STACKTRACE__)}
+    catch
+      kind, error ->
+        {:error, Exception.format(kind, error, __STACKTRACE__)}
     end
   end
 end

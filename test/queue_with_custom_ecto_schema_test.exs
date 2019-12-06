@@ -2,7 +2,7 @@ defmodule QueueWithCustomEctoSchemaTest do
   use ExUnit.Case, async: true
 
   defmodule Pool do
-    use DQ.Pool, otp_app: :dq, after_empty_result_ms: 500
+    use DQ.Pool, otp_app: :dq, after_empty_result_ms: 50
   end
 
   defmodule YourJobSchema do

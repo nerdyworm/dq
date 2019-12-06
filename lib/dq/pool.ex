@@ -19,6 +19,7 @@ defmodule DQ.Pool do
       @pushes Module.concat(__MODULE__, PushCollector)
 
       def start_link(opts) do
+        producers = Keyword.get(opts, :producers, @config[:producers])
         queues = Keyword.get(opts, :queues, @config[:queues])
         ack_batch_size = Keyword.get(opts, :ack_batch_size, @config[:ack_batch_size])
         ack_deadline_ms = Keyword.get(opts, :ack_deadline_ms, @config[:ack_deadline_ms])
@@ -37,13 +38,33 @@ defmodule DQ.Pool do
             [[name: @pushes, func: :push, max: push_batch_size, deadline_ms: push_deadline_ms]],
             id: :pushes
           ),
-          worker(DQ.Server.WeightedRoundRobin, [queues, pool]),
-          worker(Producer, [pool]),
-          supervisor(ConsumerSupervisor, [pool]),
-          supervisor(Task.Supervisor, [[name: @tasks]])
+          worker(DQ.Server.WeightedRoundRobin, [queues, pool])
         ]
 
+        children = children ++ make_producers(pool, producers) ++ make_consumers(pool, producers)
+
         Supervisor.start_link(children, strategy: :one_for_one, name: __MODULE__)
+      end
+
+      defp make_producers(pool, producers) do
+        if producers > 0 do
+          for idx <- 1..producers do
+            worker(Producer, [pool, idx], id: :"producer_#{idx}")
+          end
+        else
+          []
+        end
+      end
+
+      defp make_consumers(pool, producers) do
+        if producers > 0 do
+          [
+            supervisor(ConsumerSupervisor, [pool, producers]),
+            supervisor(Task.Supervisor, [[name: @tasks]])
+          ]
+        else
+          []
+        end
       end
 
       def config do
@@ -78,6 +99,13 @@ defmodule DQ.Pool do
         Task.Supervisor.async_nolink(@tasks, DQ.Worker, :run, [job])
       end
 
+      def timeout(pid, max) do
+        IO.inspect({pid, max})
+        IO.inspect({pid, max})
+        IO.inspect({pid, max})
+        IO.inspect({pid, max})
+      end
+
       def batch_ack(queue, job) do
         :ok = Collector.collect(@acks, queue, job)
       end
@@ -107,6 +135,7 @@ defmodule DQ.Pool do
     config = Application.get_env(otp_app, pool, [])
 
     defaults = [
+      producers: 1,
       after_empty_result_ms: 5000,
       min_demand: 0,
       max_demand: 1,

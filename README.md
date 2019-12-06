@@ -42,6 +42,7 @@ worker(Pool, []),
 ```elixir
 # config.exs
 config :example, Pool,
+   producers: 1,
    queues: [Queue],
    min_demand: 1,
    max_demand: 10,

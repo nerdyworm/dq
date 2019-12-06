@@ -61,24 +61,36 @@ defmodule DQ.Plug do
 
     get "/api/queues/:name" do
       queue = name |> String.to_existing_atom()
-      {:ok, info} = queue.info
+      {:ok, info} = queue.info()
       data = render_queue(queue, info)
       json(conn, 200, data)
     end
 
-    put "/api/queues/:name/dead_purge" do
+    get "/api/queues/:name/jobs" do
       queue = name |> String.to_existing_atom()
-      :ok = queue.dead_purge
+      {:ok, dead} = queue.dead()
+      jobs = Enum.map(dead, &render_job(queue, &1))
+      json(conn, 200, jobs)
+    end
+
+    put "/api/queues/:name/purge" do
+      queue = name |> String.to_existing_atom()
+      :ok = queue.purge()
 
       conn
       |> send_resp(204, "")
       |> halt
     end
 
-    put "/api/jobs/retry" do
-      queue = conn.params["queue"] |> String.to_atom()
-      job = queue.decode(conn.params["encoded"])
-      :ok = queue.dead_retry(job)
+    put "/api/jobs/move" do
+      dest_queue = conn.params["dest"] |> String.to_atom()
+
+      Enum.each(conn.params["jobs"], fn params ->
+        source_queue = params["queue"] |> String.to_atom()
+        job = source_queue.decode(params["encoded"])
+        :ok = dest_queue.push(job.module, job.args)
+        :ok = source_queue.ack(job)
+      end)
 
       conn
       |> send_resp(204, "")
@@ -86,20 +98,15 @@ defmodule DQ.Plug do
     end
 
     put "/api/jobs/ack" do
-      queue = conn.params["queue"] |> String.to_atom()
-      job = queue.decode(conn.params["encoded"])
-      :ok = queue.dead_ack(job)
+      Enum.each(conn.params["jobs"], fn params ->
+        queue = params["queue"] |> String.to_atom()
+        job = queue.decode(params["encoded"])
+        :ok = queue.ack(job)
+      end)
 
       conn
       |> send_resp(204, "")
       |> halt
-    end
-
-    get "/api/queues/:name/dead" do
-      queue = name |> String.to_existing_atom()
-      {:ok, dead} = queue.dead
-      jobs = Enum.map(dead, &render_job(queue, &1))
-      json(conn, 200, jobs)
     end
 
     def json(conn, code, body) do

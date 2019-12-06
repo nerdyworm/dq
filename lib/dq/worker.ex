@@ -15,6 +15,7 @@ defmodule DQ.Worker do
 
   defp start(pool, %{queue: queue, max_runtime_seconds: max_runtime_seconds} = job) do
     timeout = (max_runtime_seconds || 30) * 1000
+
     task = pool.start_task(job)
 
     case Task.yield(task, timeout) || Task.shutdown(task) do

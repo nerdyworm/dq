@@ -5,9 +5,9 @@ defmodule DQ.Adapter do
 
   @type t :: module
 
-  @typep queue :: DQ.Queue.t
-  @typep job :: DQ.Job.t
-  @typep info :: DQ.Info.t
+  @typep queue :: DQ.Queue.t()
+  @typep job :: DQ.Job.t()
+  @typep info :: DQ.Info.t()
 
   @callback push(queue, list(job)) :: :ok | {:error, any}
   @callback push(queue, job) :: :ok | {:error, any}
@@ -18,4 +18,3 @@ defmodule DQ.Adapter do
   @callback info(queue) :: {:ok, info}
   @callback purge(queue) :: :ok
 end
-
