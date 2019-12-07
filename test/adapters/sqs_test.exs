@@ -1,14 +1,24 @@
 defmodule QueAdaptersSqsTest do
   use ExUnit.Case
 
+  defmodule Dead do
+    use DQ.Queue,
+      otp_app: :dq,
+      adapter: DQ.Adapters.Sqs,
+      retry_intervals: [0],
+      queue_name: "dq_test",
+      queue_wait_time_seconds: 0
+  end
+
   defmodule FakeQueue do
     def config do
-      [repo: DQ.Repo,
-       queue_name: "dq_test",
-       dead_queue_name: "dq_test_error",
-       queue_wait_time_seconds: 5,
-       retry_intervals: [1]
-     ]
+      [
+        repo: DQ.Repo,
+        queue_name: "dq_test",
+        dead_queue: Dead,
+        queue_wait_time_seconds: 5,
+        retry_intervals: [1]
+      ]
     end
   end
 
@@ -18,6 +28,7 @@ defmodule QueAdaptersSqsTest do
     case DQ.Adapters.Sqs.purge(FakeQueue) do
       :ok ->
         :ok
+
       {:error, {:http_error, 403, %{code: "AWS.SimpleQueueService.PurgeQueueInProgress"}}} ->
         :ok
     end

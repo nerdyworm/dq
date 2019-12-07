@@ -6,13 +6,22 @@ defmodule QueueSqsTest do
     use DQ.Pool, otp_app: :dq, after_empty_result_ms: 500, producers: 1, max_demand: 10
   end
 
+  defmodule Dead do
+    use DQ.Queue,
+      otp_app: :dq,
+      adapter: DQ.Adapters.Sqs,
+      retry_intervals: [0],
+      queue_name: "dq_test",
+      queue_wait_time_seconds: 0
+  end
+
   defmodule Queue do
     use DQ.Queue,
       otp_app: :dq,
       adapter: DQ.Adapters.Sqs,
       retry_intervals: [0],
       queue_name: "dq_test",
-      dead_queue_name: "dq_test_error",
+      dead_queue: Dead,
       queue_wait_time_seconds: 1
   end
 

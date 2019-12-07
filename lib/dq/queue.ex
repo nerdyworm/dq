@@ -26,6 +26,10 @@ defmodule DQ.Queue do
         @adapter.nack(@queue, job, message)
       end
 
+      def push(%DQ.Job{} = job) do
+        @adapter.push(@queue, job)
+      end
+
       def push(pairs) when is_list(pairs) do
         @adapter.push(@queue, pairs)
       end

@@ -30,30 +30,30 @@ defmodule DQ.Plug do
     end
 
     def auth(conn, _opts) do
-      incoming = get_req_header(conn, "x-dq-authorization")
+      incoming = get_req_header(conn, "authorization")
       token = Application.get_env(:dq, :token, "")
-      # if "#{incoming}" == "#{token}" do
-      conn
-      # else
-      #   conn
-      #   |> send_resp(403, "Invalid token")
-      #   |> halt
-      # end
-    end
 
-    get "/api/ping" do
-      conn
-      |> send_resp(200, "ok")
-      |> halt
+      if "#{incoming}" == "#{token}" do
+        conn
+      else
+        conn
+        |> send_resp(403, "Invalid DQ token")
+        |> halt
+      end
     end
 
     get "/api/queues" do
       queues = Application.get_env(:dq, :queues, [])
 
       data =
-        Enum.map(queues, fn queue ->
-          {:ok, info} = queue.info()
-          render_queue(queue, info)
+        Enum.map(queues, fn
+          [source: queue, dest: _] ->
+            {:ok, info} = queue.info()
+            render_queue(queue, info)
+
+          queue ->
+            {:ok, info} = queue.info()
+            render_queue(queue, info)
         end)
 
       json(conn, 200, data)
@@ -66,9 +66,9 @@ defmodule DQ.Plug do
       json(conn, 200, data)
     end
 
-    get "/api/queues/:name/jobs" do
+    get "/api/queues/:name/pop" do
       queue = name |> String.to_existing_atom()
-      {:ok, dead} = queue.dead()
+      {:ok, dead} = queue.pop(10)
       jobs = Enum.map(dead, &render_job(queue, &1))
       json(conn, 200, jobs)
     end
@@ -83,12 +83,14 @@ defmodule DQ.Plug do
     end
 
     put "/api/jobs/move" do
-      dest_queue = conn.params["dest"] |> String.to_atom()
+      # dest_queue = conn.params["dest"] |> String.to_atom()
 
       Enum.each(conn.params["jobs"], fn params ->
         source_queue = params["queue"] |> String.to_atom()
         job = source_queue.decode(params["encoded"])
-        :ok = dest_queue.push(job.module, job.args)
+
+        dest_queue = dest(source_queue)
+        :ok = dest_queue.push(job)
         :ok = source_queue.ack(job)
       end)
 
@@ -109,6 +111,18 @@ defmodule DQ.Plug do
       |> halt
     end
 
+    def dest(source) do
+      queues = Application.get_env(:dq, :queues, [])
+
+      Enum.find_value(queues, fn
+        [source: ^source, dest: dest] ->
+          dest
+
+        _ ->
+          nil
+      end)
+    end
+
     def json(conn, code, body) do
       conn
       |> put_resp_header("content-type", "application/json")
@@ -127,9 +141,9 @@ defmodule DQ.Plug do
         queue: "#{queue}",
         module: job.module,
         args: job.args |> render_args(),
-        status: job.status,
+        status: to_string(job.status),
         error_count: job.error_count,
-        error_message: job.error_message,
+        error_message: to_string(job.error_message),
         encoded: queue.encode(job)
       }
     end

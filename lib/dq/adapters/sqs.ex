@@ -27,15 +27,6 @@ defmodule DQ.Adapters.Sqs do
     end
   end
 
-  def dead_purge(queue) do
-    name = queue.config |> Keyword.get(:dead_queue_name)
-
-    case SQS.purge_queue(name) |> ExAws.request() do
-      {:error, reason} -> {:error, reason}
-      {:ok, _} -> :ok
-    end
-  end
-
   defp info_by_queue(name) do
     {:ok, response} = SQS.get_queue_url(name) |> ExAws.request()
 
@@ -82,19 +73,18 @@ defmodule DQ.Adapters.Sqs do
 
     if interval != nil do
       case SQS.change_message_visibility(name, receipt_handle, interval) |> ExAws.request() do
-        {:ok, _} -> :ok
+        {:ok, _} ->
+          :telemetry.execute([:dq, :retry], %{interval: interval}, %{job_id: job.id})
       end
     else
       job = %Job{job | status: "dead", error_message: message, message: nil}
-      dead_queue_name = queue.config |> Keyword.get(:dead_queue_name)
 
       dead_queue = queue.config |> Keyword.get(:dead_queue)
-      :ok = dead_queue.push(job.module, job.args)
+      :ok = dead_queue.push(job)
 
       case SQS.delete_message(name, receipt_handle) |> ExAws.request() do
         {:ok, _} ->
-          Logger.error("#{job.id} moved to dead #{job.message}")
-          :ok
+          :telemetry.execute([:dq, :dead], %{job: job})
       end
     end
   end
@@ -141,67 +131,25 @@ defmodule DQ.Adapters.Sqs do
   end
 
   def push(queue, module, args, opts \\ []) do
-    start = :os.system_time(:milli_seconds)
-    name = queue.config |> Keyword.get(:queue_name)
     job = Job.new(queue, module, args)
-
-    case SQS.send_message(name, job |> encode, opts) |> ExAws.request() do
-      {:ok, _} ->
-        Logger.info(
-          "push=#{module} args=#{inspect(args)} runtime=#{:os.system_time(:milli_seconds) - start}ms"
-        )
-
-        :ok
-    end
+    push(queue, job)
   end
 
-  def dead_ack(queue, %Job{message: %{receipt_handle: receipt_handle}}) do
-    name = queue.config |> Keyword.get(:dead_queue_name)
-
-    case SQS.delete_message(name, receipt_handle) |> ExAws.request() do
-      {:ok, _} -> :ok
-    end
-  end
-
-  def dead_push(queue, job) do
+  def push(queue, %Job{} = job) do
     start = :os.system_time(:milli_seconds)
-    name = queue.config |> Keyword.get(:dead_queue_name)
+    name = queue.config() |> Keyword.get(:queue_name)
+    payload = encode(job)
 
-    case SQS.send_message(name, job |> encode) |> ExAws.request() do
+    case SQS.send_message(name, payload) |> ExAws.request() do
       {:ok, _} ->
         Logger.info(
-          "[dead queue] #{job.mod} args=#{inspect(job.args)} runtime=#{
+          "push=#{job.module} args=#{inspect(job.args)} runtime=#{
             :os.system_time(:milli_seconds) - start
           }ms"
         )
 
         :ok
     end
-  end
-
-  def dead_retry(queue, job) do
-    :ok = queue.push(job.module, job.args)
-    name = queue.config |> Keyword.get(:dead_queue_name)
-
-    case SQS.delete_message(name, job.message.receipt_handle) |> ExAws.request() do
-      {:ok, _} -> :ok
-    end
-  end
-
-  def dead(queue) do
-    # queue_name = queue.config |> Keyword.get(:dead_queue_name)
-    queue_name = queue.config |> Keyword.get(:queue_name)
-
-    {:ok, response} =
-      SQS.receive_message(
-        queue_name,
-        wait_time_seconds: 0,
-        max_number_of_messages: 10,
-        attribute_names: :all
-      )
-      |> ExAws.request()
-
-    {:ok, decode_response(queue, response)}
   end
 
   def pop(queue, limit) do

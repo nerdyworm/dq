@@ -18,7 +18,43 @@ defmodule DQ.Pool do
       @acks Module.concat(__MODULE__, AckCollector)
       @pushes Module.concat(__MODULE__, PushCollector)
 
+      def handle_event(a, b, c, d) do
+        Logger.debug(inspect({:ack, a, b, c, d}))
+      end
+
+      def handle_nack([:dq, :nack], %{job: job}, _meta, _config) do
+        Logger.debug("[dq] [#{job.module}] [#{job.id}] nacked")
+      end
+
+      def handle_dead(
+            [:dq, :dead],
+            %{job: %{id: id, error_message: message, module: m, args: args}},
+            _meta,
+            _config
+          ) do
+        Logger.error("""
+        [dq] [#{id}] [#{inspect(m)}] moved to dead queue
+
+        args:
+
+        #{inspect(args)}
+
+        message:
+
+        #{message}
+        """)
+      end
+
+      def handle_timeout(a, b, c, d) do
+        Logger.error(inspect({:timeout, a, b, c, d}))
+      end
+
       def start_link(opts) do
+        # :telemetry.attach("dq-logger1", [:dq, :ack], &handle_event/4, nil)
+        # :telemetry.attach("dq-logger2", [:dq, :nack], &handle_nack/4, nil)
+        # :telemetry.attach("dq-logger3", [:dq, :dead], &handle_dead/4, nil)
+        # :telemetry.attach("dq-logger4", [:dq, :timeout], &handle_timeout/4, nil)
+
         producers = Keyword.get(opts, :producers, @config[:producers])
         queues = Keyword.get(opts, :queues, @config[:queues])
         ack_batch_size = Keyword.get(opts, :ack_batch_size, @config[:ack_batch_size])

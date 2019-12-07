@@ -6,9 +6,12 @@ defmodule DQ.Middleware.Logger do
 
   def call(ctx, next) do
     started_at = DateTime.utc_now()
-    Logger.info("#{log_context(ctx)} args=#{inspect(ctx.job.args)}")
+    # Logger.info("#{log_context(ctx)} args=#{inspect(ctx.job.args)}")
+
     results = run(ctx, next)
-    Logger.info("#{log_context(ctx)} runtime=#{formatted_diff(delta(started_at))}")
+    duration = delta(started_at)
+    # Logger.info("#{log_context(ctx)} runtime=#{formatted_diff(duration)}")
+
     results
   end
 

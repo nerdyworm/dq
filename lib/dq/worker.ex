@@ -21,12 +21,15 @@ defmodule DQ.Worker do
     case Task.yield(task, timeout) || Task.shutdown(task) do
       {:ok, {:error, message}} ->
         :ok = queue.nack(job, message)
+        :ok = :telemetry.execute([:dq, :nack], %{job: job}, %{})
 
       {:ok, _} ->
         :ok = pool.async_batch_ack(queue, job)
+        :ok = :telemetry.execute([:dq, :ack], %{job: job}, %{})
 
       nil ->
         :ok = log_timeout(queue, job, timeout)
+        :ok = :telemetry.execute([:dq, :timeout], %{timeout: timeout, job_id: job.id})
     end
   end
 

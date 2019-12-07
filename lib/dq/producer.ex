@@ -37,16 +37,10 @@ defmodule DQ.Producer do
 
   def handle_info(:pop, %State{pool: pool, demand: demand, history: history} = state) do
     {:ok, queue} = pool.next_queue()
-    {:ok, commands} = queue.pop(demand)
+    {:ok, jobs} = queue.pop(demand)
 
-    new_messages_received = length(commands)
+    new_messages_received = length(jobs)
     new_demand = demand - new_messages_received
-
-    IO.puts(
-      "[producer] [idx:#{state.idx}] jobs=#{length(commands)} old_demand=#{demand} new_demand=#{
-        new_demand
-      }"
-    )
 
     cond do
       new_demand == 0 ->
@@ -60,7 +54,7 @@ defmodule DQ.Producer do
     end
 
     history = Map.put(history, queue, new_messages_received)
-    {:noreply, commands, %State{state | demand: new_demand, history: history}}
+    {:noreply, jobs, %State{state | demand: new_demand, history: history}}
   end
 
   # When we have no messages for a queue see if we should back off a bit.

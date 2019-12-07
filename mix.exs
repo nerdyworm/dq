@@ -34,11 +34,14 @@ defmodule DQ.Mixfile do
       {:ecto_sql, ">= 0.0.0", optional: true},
 
       # AWS Sqs
-      {:ex_aws, "~> 2.0"},
-      {:ex_aws_sqs, "~> 2.0"},
+      {:ex_aws, ">=  0.0.0"},
+      {:ex_aws_sqs, ">= 0.0.0"},
       {:poison, "~> 4.0"},
       {:hackney, "~> 1.15"},
-      {:sweet_xml, ">= 0.5.0"}
+      {:sweet_xml, ">= 0.5.0"},
+
+      # error reporting and metrics
+      {:telemetry, "~> 0.4"}
     ]
   end
 end
