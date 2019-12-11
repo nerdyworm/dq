@@ -57,6 +57,7 @@ defmodule DQ.Pool do
 
         producers = Keyword.get(opts, :producers, @config[:producers])
         queues = Keyword.get(opts, :queues, @config[:queues])
+        deads = Keyword.get(opts, :deads, @config[:deads])
         ack_batch_size = Keyword.get(opts, :ack_batch_size, @config[:ack_batch_size])
         ack_deadline_ms = Keyword.get(opts, :ack_deadline_ms, @config[:ack_deadline_ms])
         push_batch_size = Keyword.get(opts, :push_batch_size, @config[:push_batch_size])
@@ -74,7 +75,8 @@ defmodule DQ.Pool do
             [[name: @pushes, func: :push, max: push_batch_size, deadline_ms: push_deadline_ms]],
             id: :pushes
           ),
-          worker(DQ.Server.WeightedRoundRobin, [queues, pool])
+          worker(DQ.Server.WeightedRoundRobin, [queues, pool]),
+          worker(DQ.Server.Ticker, [deads, pool])
         ]
 
         children = children ++ make_producers(pool, producers) ++ make_consumers(pool, producers)

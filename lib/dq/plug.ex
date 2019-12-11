@@ -68,7 +68,7 @@ defmodule DQ.Plug do
 
     get "/api/queues/:name/pop" do
       queue = name |> String.to_existing_atom()
-      {:ok, dead} = queue.pop(10)
+      {:ok, dead} = queue.pop(100)
       jobs = Enum.map(dead, &render_job(queue, &1))
       json(conn, 200, jobs)
     end
@@ -137,9 +137,9 @@ defmodule DQ.Plug do
 
     def render_job(queue, job) do
       %{
-        id: job.id,
+        id: "#{job.id}",
         queue: "#{queue}",
-        module: job.module,
+        module: "#{job.module}",
         args: job.args |> render_args(),
         status: to_string(job.status),
         error_count: job.error_count,
@@ -149,7 +149,7 @@ defmodule DQ.Plug do
     end
 
     def render_args(args) do
-      Poison.encode!(args, pretty: true)
+      inspect(args, pretty: true)
     end
   end
 end

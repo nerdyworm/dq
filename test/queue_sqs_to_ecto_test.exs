@@ -1,4 +1,4 @@
-defmodule QueueSqsTest do
+defmodule QueueSqsToEctoTest do
   # use QueueAdapterCase
   use ExUnit.Case
 
@@ -9,24 +9,22 @@ defmodule QueueSqsTest do
   defmodule Dead do
     use DQ.Queue,
       otp_app: :dq,
-      adapter: DQ.Adapters.Sqs,
-      retry_intervals: [0],
-      queue_name: "dq_test",
-      queue_wait_time_seconds: 0
+      adapter: DQ.Adapters.Ecto,
+      repo: DQ.Repo
   end
 
   defmodule Queue do
     use DQ.Queue,
       otp_app: :dq,
       adapter: DQ.Adapters.Sqs,
-      retry_intervals: [0],
+      retry_intervals: [],
       queue_name: "dq_test",
       dead_queue: Dead,
       queue_wait_time_seconds: 1
   end
 
   setup_all context do
-    {:ok, pid} = Pool.start_link(queues: [Queue])
+    {:ok, pid} = Pool.start_link(queues: [Queue], deads: [Dead])
     on_exit(context, fn -> Process.exit(pid, :exit) end)
   end
 
@@ -35,9 +33,11 @@ defmodule QueueSqsTest do
     {:ok, queue: Queue, process: __MODULE__}
   end
 
-  def run(process) when is_atom(process) do
-    Process.send_after(process, :ran, 100)
-    :timer.sleep(:infinity)
+  def run(process, i) when is_atom(process) do
+    IO.puts("running: #{i}")
+    throw("Exception")
+    # :timer.sleep(:infinity)
+    # Process.send_after(process, :ran, 100)
     :ok
   end
 
@@ -46,19 +46,22 @@ defmodule QueueSqsTest do
     for i <- 1..1 do
       spawn_link(fn ->
         pairs =
-          Enum.map(1..50, fn _ ->
-            {__MODULE__, [process]}
+          Enum.map(1..50, fn i ->
+            {__MODULE__, [process, i]}
           end)
 
         assert :ok = queue.push(pairs)
       end)
     end
 
-    Enum.each(1..10, fn _ ->
-      IO.puts("hi")
-      assert_receive :ran, 30_000
-    end)
+    :timer.sleep(5000)
 
-    # :timer.sleep(:infinity)
+    Enum.each(1..5, fn _ ->
+      {:ok, jobs} = Dead.pop(10)
+
+      for job <- jobs do
+        Dead.ack(job)
+      end
+    end)
   end
 end

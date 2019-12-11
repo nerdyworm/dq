@@ -39,8 +39,6 @@ defmodule DQ.Adapters.Ecto.Statements do
     with cte as (
       SELECT id FROM $TABLE$
       WHERE
-        dequeued_at IS NULL
-      AND
         status = 'pending'
       AND
         scheduled_at <= now() at time zone 'utc' OR scheduled_at is NULL
@@ -56,6 +54,14 @@ defmodule DQ.Adapters.Ecto.Statements do
     FROM cte
     WHERE cte.id = $TABLE$.id
     RETURNING *
+    """
+  end
+
+  def retry_timeouts do
+    """
+    UPDATE $TABLE$
+      set status = 'pending', dequeued_at = NULL, deadline_at = NULL WHERE
+      status = 'running' AND deadline_at < now() at time zone 'utc'
     """
   end
 

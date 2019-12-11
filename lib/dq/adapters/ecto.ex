@@ -9,10 +9,37 @@ defmodule DQ.Adapters.Ecto do
 
   alias Ecto.Adapters.SQL
 
+  def tick(queue) do
+    %Postgrex.Result{} = sql(queue, Statements.retry_timeouts(), [])
+    :ok
+  end
+
   def info(queue) do
     %Postgrex.Result{columns: columns, rows: [row]} = sql(queue, Statements.info(), [])
     cols = Enum.map(columns, &String.to_atom(&1))
     {:ok, struct(Info, Enum.zip(cols, row))}
+  end
+
+  def push(queue, %DQ.Job{} = job) do
+    keys = Map.keys(job)
+    keys = Map.keys(%DQ.Adapters.Ecto.Job{})
+
+    job = %DQ.Adapters.Ecto.Job{
+      status: "pending",
+      payload: Encoder.encode({job.module, job.args}),
+      error_count: job.error_count,
+      error_message: job.error_message,
+      args: job.args,
+      module: job.module,
+      scheduled_at: nil,
+      dequeued_at: nil,
+      max_runtime_seconds: job.max_runtime_seconds,
+      module: job.module
+    }
+
+    repo = queue.config[:repo]
+    %DQ.Adapters.Ecto.Job{id: id} = repo.insert!(job)
+    {:ok, id}
   end
 
   def push(queue, jobs) when is_list(jobs) do

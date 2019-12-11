@@ -18,6 +18,10 @@ defmodule DQ.Queue do
         @adapter.info(@queue)
       end
 
+      def tick do
+        @adapter.tick(@queue)
+      end
+
       def ack(job) do
         @adapter.ack(@queue, job)
       end

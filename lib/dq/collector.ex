@@ -21,7 +21,7 @@ defmodule DQ.Collector do
        timer: nil,
        func: Keyword.get(opts, :func, :push),
        max: Keyword.get(opts, :max, 10),
-       deadline_ms: Keyword.get(opts, :deadline_ms, 500)
+       deadline_ms: Keyword.get(opts, :deadline_ms, 50)
      }}
   end
 

@@ -108,6 +108,13 @@ Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_do
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
 be found at [https://hexdocs.pm/dq](https://hexdocs.pm/dq).
 
+### Dead Queues
+
+```elixir
+config :example, Queue,
+  dead_queue: DeadQueue
+```
+
 ## Admin Interface
 
 [http://dq-admin.s3-website-us-east-1.amazonaws.com](http://dq-admin.s3-website-us-east-1.amazonaws.com)
