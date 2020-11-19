@@ -81,18 +81,22 @@ defmodule DQ.Adapters.Sqs do
 
       dead_queue = queue.config |> Keyword.get(:dead_queue)
 
-      case dead_queue.push(job) do
-        :ok ->
-          :ok
+      if dead_queue == nil do
+        :telemetry.execute([:dq, :dead], %{job: job})
+      else
+        case dead_queue.push(job) do
+          :ok ->
+            :ok
 
-        {:ok, id} ->
-          IO.puts("PUSHED DEAD: #{id}")
-          :ok
-      end
+          {:ok, _id} ->
+            # IO.puts("PUSHED DEAD: #{id}")
+            :ok
+        end
 
-      case SQS.delete_message(name, receipt_handle) |> ExAws.request() do
-        {:ok, _} ->
-          :telemetry.execute([:dq, :dead], %{job: job})
+        case SQS.delete_message(name, receipt_handle) |> ExAws.request() do
+          {:ok, _} ->
+            :telemetry.execute([:dq, :dead], %{job: job})
+        end
       end
     end
   end
