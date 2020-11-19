@@ -14,7 +14,7 @@ defmodule DQ.Middleware.Executioner do
 
   defp try_apply(m, args) do
     try do
-      apply(m, :run, args)
+      apply(m, :run, List.wrap(args))
     rescue
       error ->
         {:error, Exception.format(:error, error, __STACKTRACE__)}
