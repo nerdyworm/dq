@@ -10,7 +10,7 @@ defmodule DQ.Server.Ticker do
   end
 
   defp schedule_tick do
-    Process.send_after(self(), :tick, 1000)
+    Process.send_after(self(), :tick, 5000)
   end
 
   def name(pool) when is_nil(pool), do: __MODULE__

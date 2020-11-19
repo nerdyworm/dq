@@ -79,15 +79,16 @@ defmodule DQ.Pool do
           worker(DQ.Server.Ticker, [deads, pool])
         ]
 
-        children = children ++ make_producers(pool, producers) ++ make_consumers(pool, producers)
+        children =
+          children ++ make_producers(pool, queues, producers) ++ make_consumers(pool, producers)
 
         Supervisor.start_link(children, strategy: :one_for_one, name: __MODULE__)
       end
 
-      defp make_producers(pool, producers) do
+      defp make_producers(pool, queues, producers) do
         if producers > 0 do
           for idx <- 1..producers do
-            worker(Producer, [pool, idx], id: :"producer_#{idx}")
+            worker(Producer, [pool, queues, idx], id: :"producer_#{idx}")
           end
         else
           []

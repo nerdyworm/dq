@@ -139,3 +139,8 @@ end
 config :dq, :queues, [Queue]
 config :dq, :token, "generate a long token here"
 ```
+
+
+# TODO
+- remove genstage, just use simple poller/pool
+- single job schema, possible ecto_poly ussage for job structs

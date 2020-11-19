@@ -51,6 +51,7 @@ defmodule DQ.Adapters.Ecto do
   def sql(queue, statement, args) do
     repo = queue.config[:repo]
     table = queue.config |> Keyword.get(:table, :jobs) |> Atom.to_string()
+    log = queue.config |> Keyword.get(:debug, false)
 
     statement =
       statement
@@ -58,7 +59,7 @@ defmodule DQ.Adapters.Ecto do
       |> String.replace("\n", " ")
       |> String.replace(~r/\s+/, " ")
 
-    SQL.query!(repo, statement, args)
+    SQL.query!(repo, statement, args, log: log)
   end
 
   def push(queue, module, args, opts \\ []) do
