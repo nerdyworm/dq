@@ -22,7 +22,7 @@ defmodule DQ.Mixfile do
 
   defp deps do
     [
-      {:gen_stage, "~> 0.14"},
+      {:gen_stage, ">= 0.0.0"},
 
       # for admin
       {:plug, ">= 1.0.0"},
